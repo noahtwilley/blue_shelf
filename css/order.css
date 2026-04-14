@@ -1,0 +1,138 @@
+/* === BLUE SHELF MICROBAKERY === FILE: css/order.css === */
+/* Order wizard, step indicators, date cards, option cards, subtotal bar, checkout */
+
+#page-order .content { padding: 36px 5% 60px; }
+
+/* ORDER SUCCESS */
+.order-success {
+  display: none; text-align: center; padding: 3rem 2rem;
+  background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow);
+  max-width: 500px; margin: 0 auto;
+}
+.order-success.show { display: block; animation: fadeIn 0.4s ease both; }
+.order-success .sicon { font-size: 4rem; margin-bottom: 1rem; display: block; }
+.order-success h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--navy); margin-bottom: 0.5rem; }
+.order-success p { color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.7; }
+
+/* WIZARD PROGRESS */
+.wizard-progress { display: flex; align-items: center; margin-bottom: 2rem; }
+.wizard-bar { flex: 1; height: 4px; background: var(--cream-dark); border-radius: 10px; margin: 0 1rem; position: relative; overflow: hidden; }
+.wizard-bar-fill { height: 100%; background: var(--navy); border-radius: 10px; transition: width 0.3s; }
+.wizard-steps { display: flex; gap: 1rem; }
+.wizard-step-pill {
+  display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%;
+  background: var(--cream-dark); color: var(--text-muted); font-size: 0.75rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.wizard-step-pill.active { background: var(--navy); color: var(--cream); }
+.wizard-step-pill.done { background: var(--green); color: var(--cream); }
+.wizard-step-pill span { display: none; }
+.wizard-step-pill.done span { display: inline; }
+.wizard-wrapper { min-height: 600px; }
+.wizard-step { display: none; animation: fadeIn 0.35s ease both; }
+.wizard-step.active { display: block; }
+
+/* STEP 1: DATE PICKER */
+.date-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.date-card {
+  padding: 1.2rem; border-radius: var(--radius); border: 2px solid var(--cream-dark);
+  background: var(--white); cursor: pointer; text-align: center; transition: all 0.2s;
+}
+.date-card:hover { border-color: var(--blue); background: var(--blue-xlight); }
+.date-card.selected { border-color: var(--navy); background: var(--navy); color: var(--cream); }
+.date-card-day { font-size: 0.75rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.4rem; }
+.date-card.selected .date-card-day { color: rgba(253,246,236,0.7); }
+.date-card-date { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 600; }
+
+/* STEP 2: PICKUP/DELIVERY */
+.option-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0; }
+.option-card {
+  padding: 2rem; border-radius: var(--radius); border: 2px solid var(--cream-dark);
+  background: var(--white); cursor: pointer; transition: all 0.2s; position: relative;
+}
+.option-card:hover { border-color: var(--blue); }
+.option-card.selected { border-color: var(--navy); background: var(--blue-xlight); }
+.option-card-emoji { font-size: 2.4rem; margin-bottom: 0.75rem; }
+.option-card h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--navy); margin-bottom: 0.3rem; }
+.option-card p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem; }
+.delivery-addr-wrap { display: none; margin-top: 1rem; }
+.delivery-addr-wrap.show { display: block; }
+.delivery-addr-wrap input {
+  width: 100%; padding: 0.62rem 0.9rem; border-radius: 10px;
+  border: 1.5px solid var(--cream-dark); background: var(--cream);
+  font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--text);
+  transition: border-color 0.2s; outline: none;
+}
+.delivery-addr-wrap input:focus { border-color: var(--blue); background: var(--white); }
+.delivery-fee-notice { font-size: 0.85rem; color: var(--red); font-weight: 600; margin-top: 0.5rem; }
+
+/* STEP 3: PRODUCTS */
+.wizard-products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 1.5rem; margin: 1.5rem 0 120px 0; }
+.wizard-product-card {
+  background: var(--white); border-radius: var(--radius); overflow: hidden;
+  box-shadow: var(--shadow); transition: transform 0.3s, box-shadow 0.3s;
+  border: 1px solid rgba(107,143,171,0.07); position: relative;
+}
+.wizard-product-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); }
+.wizard-product-img {
+  height: 150px; display: flex; align-items: center; justify-content: center;
+  font-size: 3.8rem; position: relative;
+}
+.wizard-product-body { padding: 1.2rem 1.25rem; }
+.wizard-product-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem; }
+.wizard-product-body h3 { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 600; color: var(--navy); }
+.wizard-product-price { font-size: 1.05rem; font-weight: 700; color: var(--blue-dark); }
+.wizard-product-body p { font-size: 0.84rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1rem; }
+.wizard-product-footer { display: flex; justify-content: space-between; align-items: center; }
+.wizard-qty-controls { display: flex; align-items: center; gap: 0.4rem; }
+
+/* FLOATING SUBTOTAL */
+.floating-subtotal {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
+  background: var(--white); padding: 1rem 5%; border-top: 1px solid var(--cream-dark);
+  display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -4px 16px rgba(28,43,58,0.08);
+}
+.floating-subtotal.hide { display: none; }
+.subtotal-info { font-size: 0.9rem; color: var(--text-muted); }
+.subtotal-info strong { color: var(--navy); font-size: 1.1rem; font-weight: 700; display: block; }
+.subtotal-btn { background: var(--navy); color: var(--cream); border: none; border-radius: 50px; padding: 0.62rem 1.4rem; font-family: 'DM Sans', sans-serif; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.subtotal-btn:hover { background: var(--blue-dark); transform: translateY(-2px); }
+.subtotal-btn:disabled { background: var(--cream-dark); color: var(--text-muted); cursor: not-allowed; transform: none; }
+
+/* STEP 4: CHECKOUT */
+.checkout-summary {
+  background: var(--cream); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.75rem;
+  border: 1px solid var(--cream-dark);
+}
+.summary-item { margin-bottom: 0.8rem; }
+.summary-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-muted); font-weight: 600; }
+.summary-value { font-size: 0.95rem; color: var(--navy); margin-top: 0.2rem; }
+.summary-items-list { list-style: none; margin-top: 0.5rem; font-size: 0.9rem; }
+.summary-items-list li { padding: 0.3rem 0; color: var(--text); }
+.summary-total { border-top: 2px solid var(--cream-dark); padding-top: 0.75rem; margin-top: 0.75rem; }
+.summary-total-value { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--navy); }
+.checkout-form { max-width: 500px; }
+.checkout-form .form-group { margin-bottom: 1.1rem; }
+
+/* WIZARD BUTTONS */
+.wizard-buttons { display: flex; gap: 1rem; justify-content: flex-start; margin-top: 1.5rem; }
+.wizard-btn-prev { background: none; border: 1.5px solid var(--cream-dark); border-radius: 50px; padding: 0.62rem 1.4rem; font-family: 'DM Sans', sans-serif; font-size: 0.92rem; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+.wizard-btn-prev:hover { border-color: var(--blue); color: var(--blue-dark); }
+.wizard-btn-prev:disabled { cursor: not-allowed; opacity: 0.5; }
+.wizard-btn-next { background: var(--navy); color: var(--cream); border: none; border-radius: 50px; padding: 0.62rem 1.4rem; font-family: 'DM Sans', sans-serif; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.wizard-btn-next:hover { background: var(--blue-dark); transform: translateY(-2px); }
+.wizard-btn-next:disabled { background: var(--cream-dark); color: var(--text-muted); cursor: not-allowed; transform: none; }
+
+/* RESPONSIVE */
+@media (max-width: 800px) {
+  .option-cards { grid-template-columns: 1fr; }
+  .wizard-products-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+@media (max-width: 540px) {
+  .wizard-progress { flex-wrap: wrap; gap: 1rem; }
+  .wizard-bar { flex: 1 100%; margin: 0; }
+  .wizard-products-grid { grid-template-columns: 1fr; margin-bottom: 140px; }
+  .option-cards { gap: 1rem; }
+  .option-card { padding: 1.5rem; }
+  .floating-subtotal { padding: 0.75rem 4%; }
+}

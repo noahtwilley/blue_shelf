@@ -1,0 +1,111 @@
+<!-- === BLUE SHELF MICROBAKERY === FILE: pages/order.html === -->
+<!-- Order page: 4-step wizard (Date → Pickup/Delivery → Products → Checkout) -->
+
+<div class="page" id="page-order">
+  <div class="page-hero" data-emoji="🛍️">
+    <h1>Your Order</h1>
+    <p>Review your picks, choose a pickup slot, and place your order below.</p>
+  </div>
+  <div class="content">
+    <div class="order-success" id="order-success">
+      <span class="sicon">🎉</span>
+      <h2>Order placed!</h2>
+      <p>Thank you! We're so excited to bake for you. You'll hear from us with a confirmation and pickup reminder.</p>
+      <button class="add-btn" onclick="resetOrder()">← Back to Menu</button>
+    </div>
+    <div id="wizard-wrap">
+      <!-- STEP INDICATOR -->
+      <div class="wizard-progress">
+        <div class="wizard-steps">
+          <div class="wizard-step-pill active" onclick="goToStep(1)"><span>✓</span>1</div>
+          <div class="wizard-step-pill" onclick="goToStep(2)"><span>✓</span>2</div>
+          <div class="wizard-step-pill" onclick="goToStep(3)"><span>✓</span>3</div>
+          <div class="wizard-step-pill" onclick="goToStep(4)"><span>✓</span>4</div>
+        </div>
+        <div class="wizard-bar"><div class="wizard-bar-fill"></div></div>
+      </div>
+
+      <!-- WIZARD WRAPPER -->
+      <div class="wizard-wrapper">
+        <!-- STEP 1: DATE SELECTION -->
+        <div class="wizard-step active" id="wizard-step-1">
+          <h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--navy);margin-bottom:0.5rem">When would you like to pick up?</h2>
+          <p style="color:var(--text-muted);margin-bottom:1.5rem">Choose from our available baking days (next 14 days)</p>
+          <div class="date-picker-grid" id="date-picker"></div>
+          <div class="wizard-buttons">
+            <button class="wizard-btn-prev" disabled>← Back</button>
+            <button class="wizard-btn-next" id="btn-step1-next" onclick="goToStep(2)" disabled>Next →</button>
+          </div>
+        </div>
+
+        <!-- STEP 2: PICKUP OR DELIVERY -->
+        <div class="wizard-step" id="wizard-step-2">
+          <h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--navy);margin-bottom:0.5rem">Pickup or Delivery?</h2>
+          <p style="color:var(--text-muted);margin-bottom:1.5rem">How would you like to receive your order?</p>
+          <div class="option-cards">
+            <div class="option-card" onclick="selectPickupOrDelivery('pickup',this)">
+              <div class="option-card-emoji">🏠</div>
+              <h3>Pickup</h3>
+              <p>Come grab your order. We'll confirm the exact time by email.</p>
+            </div>
+            <div class="option-card" onclick="selectPickupOrDelivery('delivery',this)">
+              <div class="option-card-emoji">🚗</div>
+              <h3>Delivery</h3>
+              <p>We'll bring it to you.</p>
+              <div class="delivery-addr-wrap" id="delivery-form">
+                <input type="text" id="f-delivery-addr" placeholder="Your address" />
+                <div class="delivery-fee-notice">+ $5.00 delivery fee</div>
+              </div>
+            </div>
+          </div>
+          <div class="wizard-buttons">
+            <button class="wizard-btn-prev" onclick="goToStep(1)">← Back</button>
+            <button class="wizard-btn-next" id="btn-step2-next" onclick="goToStep(3)" disabled>Next →</button>
+          </div>
+        </div>
+
+        <!-- STEP 3: PRODUCTS -->
+        <div class="wizard-step" id="wizard-step-3">
+          <h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--navy);margin-bottom:0.5rem">Choose Your Goodies 🧁</h2>
+          <p style="color:var(--text-muted);margin-bottom:1.5rem">Add or remove items to customize your order</p>
+          <div class="wizard-products-grid" id="wizard-products-grid"></div>
+          <div class="floating-subtotal hide" id="floating-subtotal">
+            <div class="subtotal-info">
+              <span id="subtotal-items">0 items</span>
+              <strong id="subtotal-total">$0.00</strong>
+            </div>
+            <button class="subtotal-btn" id="btn-step3-next" onclick="goToStep(4)" disabled>Next →</button>
+          </div>
+          <div style="margin-bottom:2rem">
+            <div class="wizard-buttons" style="padding-bottom:6rem">
+              <button class="wizard-btn-prev" onclick="goToStep(2)">← Back</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4: CHECKOUT -->
+        <div class="wizard-step" id="wizard-step-4">
+          <h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--navy);margin-bottom:1.5rem">Confirm your order</h2>
+          <div class="checkout-summary" id="checkout-summary"></div>
+          <div class="checkout-form">
+            <div class="form-group"><label>Full Name</label><input type="text" id="f-name" placeholder="Jane Smith" /></div>
+            <div class="form-group"><label>Email</label><input type="email" id="f-email" placeholder="jane@email.com" /></div>
+            <div class="form-group"><label>Phone</label><input type="tel" id="f-phone" placeholder="(416) 555-0100" /></div>
+            <div class="form-group">
+              <label>Payment</label>
+              <div class="payment-options">
+                <div class="payment-option selected" onclick="selectPayment(this)"><input type="radio" name="pay" checked /><label>💵 Cash on Pickup</label></div>
+                <div class="payment-option" onclick="selectPayment(this)"><input type="radio" name="pay" /><label>📧 E-Transfer</label></div>
+              </div>
+            </div>
+            <div class="form-group"><label>Notes (optional)</label><textarea id="f-notes" rows="2" placeholder="Allergies, special requests…" style="resize:none"></textarea></div>
+            <div class="wizard-buttons">
+              <button class="wizard-btn-prev" onclick="goToStep(3)">← Back</button>
+              <button class="wizard-btn-next" id="submit-btn" onclick="submitWizardOrder()" style="flex:1">Place My Order →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

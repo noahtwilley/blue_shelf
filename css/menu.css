@@ -1,0 +1,50 @@
+/* === BLUE SHELF MICROBAKERY === FILE: css/menu.css === */
+/* Menu grid, cards, filter buttons */
+
+#page-menu .content { padding: 36px 5% 60px; }
+
+/* MODIFIED: CTA banner above filter row (CHANGE 3) */
+.menu-cta-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--blush-light, #fdeee8); border: 1.5px solid var(--blush-dark, #e8b4a0);
+  border-radius: var(--radius); padding: 0.85rem 1.25rem; margin-bottom: 1.5rem;
+  font-family: 'DM Sans', sans-serif; font-size: 0.92rem; color: #6b3020;
+}
+.menu-cta-banner strong { font-weight: 600; }
+.menu-cta-banner a {
+  font-weight: 600; color: var(--navy); text-decoration: none;
+  background: var(--navy); color: var(--cream); padding: 0.35rem 1rem;
+  border-radius: 50px; font-size: 0.84rem; transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.menu-cta-banner a:hover { opacity: 0.85; }
+
+.menu-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+.filter-btn {
+  padding: 0.4rem 1rem; border-radius: 50px; border: 1.5px solid var(--cream-dark);
+  background: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+  font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+}
+.filter-btn:hover { border-color: var(--blue); color: var(--blue-dark); }
+.filter-btn.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+.menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 1.5rem; }
+.menu-card {
+  background: var(--white); border-radius: var(--radius); overflow: hidden;
+  box-shadow: var(--shadow); transition: transform 0.3s, box-shadow 0.3s;
+  border: 1px solid rgba(107,143,171,0.07);
+}
+/* MODIFIED: hover changed to scale(1.03) for showcase feel (CHANGE 3) */
+.menu-card:hover { transform: scale(1.03); box-shadow: var(--shadow-hover); }
+.menu-card-img {
+  /* MODIFIED: height increased from 150px to 200px (CHANGE 3) */
+  height: 200px; display: flex; align-items: center; justify-content: center;
+  font-size: 3.8rem; position: relative; overflow: hidden;
+}
+.menu-card-body { padding: 1.2rem 1.25rem; }
+.menu-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem; }
+.menu-card h3 { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 600; color: var(--navy); }
+.menu-card-price { font-size: 1.05rem; font-weight: 700; color: var(--blue-dark); white-space: nowrap; }
+.menu-card p { font-size: 0.84rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1rem; }
+.menu-card-footer { display: flex; justify-content: space-between; align-items: center; }
+/* MODIFIED: category tag on each card (CHANGE 3) */
+.menu-cat-tag { cursor: default; }

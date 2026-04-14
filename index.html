@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!-- === BLUE SHELF MICROBAKERY === FILE: index.html === -->
+<!-- Shell: loads CSS, HTML partials, and JS. GitHub Pages compatible. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blue Shelf Microbakery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/nav.css" />
+  <link rel="stylesheet" href="css/menu.css" />
+  <link rel="stylesheet" href="css/order.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+  <!-- MODIFIED: EmailJS CDN for order confirmation emails (CHANGE 1) -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <span class="nav-logo" onclick="showPage('menu')">Blue <span>Shelf</span></span>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-menu" onclick="showPage('menu')">🧁 Menu</button>
+    <button class="nav-tab" id="tab-order" onclick="showPage('order')">🛒 Order</button>
+    <button class="nav-tab" id="tab-admin" onclick="showPage('admin')">⚙️ Admin</button>
+  </div>
+  <button class="cart-btn" onclick="showPage('order')">
+    🛒 Cart <div class="cart-count" id="cart-count">0</div>
+  </button>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<!-- PAGE CONTAINERS (loaded inline from partials) -->
+<div id="app"></div>
+
+<!-- DATA -->
+<script src="js/data.js"></script>
+
+<!-- UTILITIES -->
+<script src="js/toast.js"></script>
+<script src="js/router.js"></script>
+
+<!-- FEATURES -->
+<script src="js/email.js"></script><!-- MODIFIED: EmailJS handler (CHANGE 1) -->
+<script src="js/menu.js"></script>
+<script src="js/order.js"></script>
+<script src="js/admin.js"></script>
+
+<!-- LOAD PAGE PARTIALS & INIT -->
+<script>
+var appReady = false;
+(function() {
+  var pages = ['pages/menu.html', 'pages/order.html', 'pages/admin.html'];
+  var app = document.getElementById('app');
+  var results = new Array(pages.length);
+  var loaded = 0;
+
+  pages.forEach(function(url, idx) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onload = function() {
+      if (xhr.status >= 200 && xhr.status < 400 || xhr.status === 0) {
+        results[idx] = xhr.responseText;
+      }
+      loaded++;
+      if (loaded === pages.length) assemble();
+    };
+    xhr.onerror = function() { loaded++; if (loaded === pages.length) assemble(); };
+    xhr.send();
+  });
+
+  function assemble() {
+    /* Append in deterministic order */
+    for (var i = 0; i < results.length; i++) {
+      if (results[i]) {
+        var div = document.createElement('div');
+        div.innerHTML = results[i];
+        while (div.firstChild) app.appendChild(div.firstChild);
+      }
+    }
+    appReady = true;
+    renderMenu();
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!-- === BLUE SHELF MICROBAKERY === FILE: pages/admin.html === -->
+<!-- Admin page: lock screen, tabbed dashboard (Orders, Day Summary, Products, Baking Days) -->
+
+<div class="page" id="page-admin">
+  <div class="page-hero" data-emoji="⚙️">
+    <h1>Baker's Dashboard</h1>
+    <p>Manage inventory, track incoming orders, and keep your shelf running smoothly.</p>
+  </div>
+  <div class="content">
+    <!-- Lock screen -->
+    <div class="admin-lock" id="admin-lock">
+      <span class="lock-icon">🔒</span>
+      <h2>Baker Access</h2>
+      <p>Enter your baker password to access the dashboard.</p>
+      <input type="password" id="admin-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')unlockAdmin()" />
+      <button onclick="unlockAdmin()">Unlock Dashboard</button>
+      <p class="hint">Hint: <strong>blueshelf</strong></p>
+    </div>
+    <!-- Dashboard (hidden until unlock) -->
+    <div class="admin-dash" id="admin-dash">
+      <div class="admin-header-row">
+        <h2>Good morning, Baker 👋</h2>
+        <button class="logout-btn" onclick="lockAdmin()">Lock Dashboard</button>
+      </div>
+      <!-- Admin Sub-Nav Tabs -->
+      <div class="admin-sub-nav">
+        <button class="admin-sub-tab active" data-tab="orders" onclick="showAdminTab('orders')">📋 Orders</button>
+        <button class="admin-sub-tab" data-tab="summary" onclick="showAdminTab('summary')">📅 Day Summary</button>
+        <button class="admin-sub-tab" data-tab="products" onclick="showAdminTab('products')">🧁 Products</button>
+        <button class="admin-sub-tab" data-tab="bakingdays" onclick="showAdminTab('bakingdays')">📆 Baking Days</button>
+      </div>
+      <!-- Tab Panes -->
+      <div class="admin-tab active" id="admin-tab-orders">
+        <div class="admin-card">
+          <div class="admin-card-title">Incoming Orders <span class="tag tag-blue" id="orders-badge">0 orders</span></div>
+          <div id="orders-table-wrap"></div>
+        </div>
+      </div>
+      <div class="admin-tab" id="admin-tab-summary">
+        <div class="admin-card">
+          <div class="admin-card-title">Orders by Date</div>
+          <div id="summary-content"></div>
+        </div>
+      </div>
+      <div class="admin-tab" id="admin-tab-products">
+        <div class="admin-card">
+          <div class="admin-card-title">Manage Products</div>
+          <div id="products-list"></div>
+          <button class="add-btn" onclick="toggleAddProductForm()" style="margin-top:1.5rem">+ Add Product</button>
+          <div id="add-product-form" style="display:none;margin-top:1.5rem;padding:1.5rem;background:var(--cream);border-radius:var(--radius);border:1px solid var(--cream-dark)">
+            <h4 style="font-weight:600;margin-bottom:1rem;color:var(--navy)">Add New Product</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+              <div class="form-group" style="margin-bottom:0.75rem"><label>Emoji</label><input type="text" id="add-emoji" placeholder="🍞" maxlength="2" /></div>
+              <div class="form-group" style="margin-bottom:0.75rem"><label>Product Name</label><input type="text" id="add-name" placeholder="Sourdough Loaf" /></div>
+              <div class="form-group" style="margin-bottom:0.75rem"><label>Category</label>
+                <select id="add-category">
+                  <option value="bread">Bread</option>
+                  <option value="pastry">Pastry</option>
+                  <option value="sweet">Sweet</option>
+                  <option value="cake">Cake</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0.75rem"><label>Price</label><input type="number" id="add-price" placeholder="12" step="0.01" /></div>
+              <div class="form-group" style="margin-bottom:0.75rem"><label>Stock</label><input type="number" id="add-stock" placeholder="10" min="0" /></div>
+              <div class="form-group" style="margin-bottom:0.75rem"><label>Description</label><input type="text" id="add-desc" placeholder="Short description" /></div>
+              <!-- MODIFIED: Photo URL field for product photos (CHANGE 4) -->
+              <div class="form-group" style="margin-bottom:0.75rem;grid-column:1/-1"><label>Photo URL (optional)</label><input type="text" id="add-photo" placeholder="https://images.unsplash.com/..." /></div>
+            </div>
+            <div style="display:flex;gap:0.75rem;margin-top:1rem">
+              <button class="add-btn" onclick="addProduct()" style="flex:1">Save Product</button>
+              <button class="wizard-btn-prev" onclick="toggleAddProductForm()" style="flex:1">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="admin-tab" id="admin-tab-bakingdays">
+        <div class="admin-card">
+          <div class="admin-card-title" style="flex-direction:column;align-items:flex-start">
+            <span>Baking Schedule</span>
+            <span class="tag tag-blue" id="baking-days-count" style="margin-top:0.5rem">0 days</span>
+          </div>
+          <div id="baking-days-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

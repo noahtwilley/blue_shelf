@@ -1,0 +1,24 @@
+<!-- === BLUE SHELF MICROBAKERY === FILE: pages/menu.html === -->
+<!-- Menu page: hero, CTA banner, filter buttons, product grid -->
+
+<div class="page active" id="page-menu">
+  <div class="page-hero" data-emoji="🧺">
+    <h1>This Week's Shelf</h1>
+    <p>Fresh small-batch goodies, made to order. Quantities are limited — grab yours before they're gone.</p>
+  </div>
+  <div class="content">
+    <!-- MODIFIED: CTA banner above filter row (CHANGE 3) -->
+    <div class="menu-cta-banner">
+      <span><strong>Ready to order?</strong> Pick your baking date and customize your box.</span>
+      <a href="#" onclick="showPage('order');return false;">Order Now →</a>
+    </div>
+    <div class="menu-filters">
+      <button class="filter-btn active" onclick="filterMenu('all',this)">All Items</button>
+      <button class="filter-btn" onclick="filterMenu('bread',this)">🍞 Breads</button>
+      <button class="filter-btn" onclick="filterMenu('pastry',this)">🥐 Pastries</button>
+      <button class="filter-btn" onclick="filterMenu('sweet',this)">🍪 Sweets</button>
+      <button class="filter-btn" onclick="filterMenu('cake',this)">🎂 Cakes</button>
+    </div>
+    <div class="menu-grid" id="menu-grid"></div>
+  </div>
+</div>

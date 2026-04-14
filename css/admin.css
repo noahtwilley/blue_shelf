@@ -1,0 +1,180 @@
+/* === BLUE SHELF MICROBAKERY === FILE: css/admin.css === */
+/* Admin lock, dashboard, sub-tabs, orders table, inventory, calendar UI */
+
+#page-admin .content { padding: 36px 5% 60px; }
+
+/* ADMIN LOCK */
+.admin-lock {
+  max-width: 380px; margin: 50px auto; text-align: center;
+  background: var(--white); border-radius: var(--radius); padding: 2.5rem;
+  box-shadow: var(--shadow);
+}
+.admin-lock .lock-icon { font-size: 2.8rem; margin-bottom: 0.75rem; display: block; }
+.admin-lock h2 { font-family: 'Playfair Display', serif; font-size: 1.55rem; color: var(--navy); margin-bottom: 0.4rem; }
+.admin-lock p { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; }
+.admin-lock input {
+  width: 100%; padding: 0.7rem 1rem; border-radius: 10px;
+  border: 1.5px solid var(--cream-dark); background: var(--cream);
+  font-family: 'DM Sans', sans-serif; font-size: 0.95rem; margin-bottom: 0.75rem;
+  outline: none; transition: border-color 0.2s; text-align: center; letter-spacing: 0.12em;
+}
+.admin-lock input:focus { border-color: var(--blue); }
+.admin-lock button {
+  width: 100%; padding: 0.72rem; background: var(--navy); color: var(--cream);
+  border: none; border-radius: 50px; font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.admin-lock button:hover { background: var(--blue-dark); }
+.admin-lock .hint { font-size: 0.74rem; color: var(--text-muted); margin-top: 0.75rem; }
+
+/* ADMIN DASHBOARD */
+.admin-dash { display: none; }
+.admin-dash.unlocked { display: block; }
+.admin-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; }
+.admin-header-row h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--navy); }
+.logout-btn {
+  background: none; border: 1.5px solid var(--cream-dark); border-radius: 50px;
+  padding: 0.4rem 0.9rem; font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+  color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+}
+.logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* ADMIN SUB-NAV TABS */
+.admin-sub-nav { display: flex; gap: 0.5rem; margin-bottom: 1.75rem; border-bottom: 2px solid var(--cream-dark); }
+.admin-sub-tab {
+  padding: 0.45rem 1.1rem; border-radius: 50px; border: none; background: none;
+  font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500;
+  color: var(--text-muted); cursor: pointer; transition: all 0.2s; position: relative; bottom: -2px;
+}
+.admin-sub-tab:hover { color: var(--navy); background: var(--blue-xlight); }
+.admin-sub-tab.active { background: var(--navy); color: var(--cream); font-weight: 600; }
+.admin-tab { display: none; }
+.admin-tab.active { display: block; }
+
+/* ADMIN CARD */
+.admin-card {
+  background: var(--white); border-radius: var(--radius); padding: 1.75rem;
+  box-shadow: var(--shadow); border: 1px solid rgba(107,143,171,0.07);
+}
+.admin-card-title {
+  font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600;
+  color: var(--navy); margin-bottom: 1.25rem; padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--cream-dark); display: flex; justify-content: space-between; align-items: center;
+}
+
+/* ORDERS TABLE */
+.orders-table { width: 100%; border-collapse: collapse; }
+.orders-table th {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--text-muted); padding: 0 0 0.7rem; text-align: left;
+  border-bottom: 1px solid var(--cream-dark); font-weight: 600;
+}
+.orders-table td {
+  padding: 0.85rem 0; border-bottom: 1px solid var(--cream-dark);
+  font-size: 0.88rem; vertical-align: middle;
+}
+.orders-table tr:last-child td { border-bottom: none; }
+
+/* ORDER STATUS PILLS (paid/received) */
+.order-status {
+  padding: 0.22rem 0.62rem; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 600; display: inline-block; cursor: pointer;
+  transition: all 0.2s; user-select: none;
+}
+.s-paid { background: var(--green-light); color: #3a7a4a; }
+.s-unpaid { background: var(--red-light); color: #a03030; }
+.s-received { background: var(--green-light); color: #3a7a4a; }
+.s-not-received { background: var(--blue-xlight); color: var(--blue-dark); }
+
+/* DELETE BTN */
+.delete-btn {
+  background: none; border: 1px solid var(--cream-dark); border-radius: 6px;
+  padding: 0.22rem 0.5rem; font-size: 0.72rem; cursor: pointer; transition: all 0.2s;
+  color: var(--text-muted); font-family: 'DM Sans', sans-serif;
+}
+.delete-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+
+/* INVENTORY ITEM */
+.inventory-item {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
+  padding: 0.8rem 0; border-bottom: 1px solid var(--cream-dark);
+}
+.inventory-item:last-child { border-bottom: none; }
+.inv-icon { font-size: 1.4rem; width: 32px; text-align: center; }
+.inv-info { flex: 1; }
+.inv-info h4 { font-weight: 600; font-size: 0.88rem; color: var(--navy); }
+.inv-info span { font-size: 0.76rem; color: var(--text-muted); }
+.inv-controls { display: flex; align-items: center; gap: 0.5rem; }
+.inv-input {
+  width: 56px; padding: 0.28rem 0.4rem; border-radius: 8px;
+  border: 1.5px solid var(--cream-dark); background: var(--cream);
+  font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
+  color: var(--navy); text-align: center; outline: none; transition: border-color 0.2s;
+}
+.inv-input:focus { border-color: var(--blue); }
+
+/* CALENDAR UI */
+.calendar-wrap {
+  background: var(--white); border-radius: var(--radius); padding: 1.5rem;
+  border: 1px solid var(--cream-dark);
+}
+.calendar-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;
+}
+.calendar-header h3 {
+  font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; color: var(--navy);
+}
+.calendar-nav-btn {
+  background: none; border: 1.5px solid var(--cream-dark); border-radius: 50%;
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s; font-size: 0.9rem; color: var(--text-muted);
+}
+.calendar-nav-btn:hover { border-color: var(--blue); color: var(--blue-dark); }
+.calendar-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem;
+}
+.calendar-day-label {
+  text-align: center; font-size: 0.7rem; font-weight: 600;
+  text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; padding-bottom: 0.5rem;
+}
+.calendar-cell {
+  aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 10px; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+  transition: all 0.2s; border: 2px solid transparent; color: var(--text);
+  position: relative;
+}
+.calendar-cell.empty { cursor: default; }
+.calendar-cell.past { color: var(--cream-dark); cursor: not-allowed; }
+.calendar-cell:not(.empty):not(.past):hover { border-color: var(--blue); background: var(--blue-xlight); }
+.calendar-cell.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+.calendar-cell.active:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+.calendar-cell .dot {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--green);
+  position: absolute; bottom: 4px;
+}
+.calendar-cell.active .dot { background: var(--cream); }
+
+/* CALENDAR DAY EDITOR */
+.day-editor {
+  margin-top: 1.5rem; padding: 1.5rem; background: var(--cream);
+  border-radius: var(--radius); border: 1px solid var(--cream-dark);
+}
+.day-editor h4 {
+  font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 600;
+  color: var(--navy); margin-bottom: 1rem;
+}
+
+/* DAY SUMMARY FILTERS */
+.summary-filters {
+  display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+}
+
+/* RESPONSIVE */
+@media (max-width: 800px) {
+  .calendar-cell { font-size: 0.75rem; }
+}
+@media (max-width: 540px) {
+  .calendar-grid { gap: 0.25rem; }
+  .calendar-cell { font-size: 0.7rem; }
+  .admin-sub-nav { flex-wrap: wrap; gap: 0.35rem; }
+}
