@@ -39,9 +39,9 @@
 var EMAILJS_PUBLIC_KEY  = 'NyOukt1VkUYDWi3TY';   /* From Account > API Keys */
 var EMAILJS_SERVICE_ID  = 'service_rchs3of';   /* From Email Services */
 var EMAILJS_TEMPLATE_ID = 'template_slej5lx';  /* From Email Templates */
-``
-/* MODIFIED: initialize EmailJS with public key (CHANGE 1) */
-emailjs.init(EMAILJS_PUBLIC_KEY);
+
+/* MODIFIED: initialize EmailJS with public key — v4 API requires an object, not a plain string (CHANGE 1) */
+emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
 
 /**
  * Send an order confirmation email to the admin (noahj.twilley@gmail.com).
@@ -62,6 +62,7 @@ function sendOrderEmail(order) { /* MODIFIED: EmailJS send with silent error han
     delivery_address: order.address || 'N/A',
     pickup_date:      order.date || 'N/A',
     payment:          order.payment || 'N/A',
+    payment_email:    window.State.paymentEmail || 'N/A',
     notes:            order.notes || 'None'
   }).then(
     function() {

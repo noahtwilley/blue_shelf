@@ -1,6 +1,8 @@
 /* === BLUE SHELF MICROBAKERY === FILE: js/order.js === */
 /* Order wizard: steps 1–4, submit, reset */
 
+var successRedirectTimer = null;
+
 /* ─── WIZARD NAVIGATION ─────────────────────────────────────── */
 function goToStep(n) {
   var S = window.State;
@@ -324,11 +326,28 @@ function submitWizardOrder() {
   /* MODIFIED: send email notification after order is committed to state (CHANGE 1) */
   sendOrderEmail(order);
 
+  /* Populate confirmation screen with order details */
+  var firstName = name.split(' ')[0];
+  document.getElementById('success-heading').textContent = 'Thank You, ' + firstName + '!';
+  document.getElementById('success-subtext').textContent = 'Your order has been placed. A confirmation email has been sent to ' + email + '.';
+  var payCard = document.getElementById('success-payment-card');
+  if (payment.indexOf('E-Transfer') !== -1) {
+    document.getElementById('success-amount').textContent = '$' + total.toFixed(2);
+    var payEmail = window.State.paymentEmail || 'noahj.twilley@gmail.com';
+    document.getElementById('success-payment-link').textContent = payEmail;
+    document.getElementById('success-payment-link').href = 'mailto:' + payEmail;
+    payCard.style.display = '';
+  } else {
+    payCard.style.display = 'none';
+  }
+
   S.cart = [];
   updateCartBadge();
   resetWizard();
   document.getElementById('wizard-wrap').style.display = 'none';
   document.getElementById('order-success').classList.add('show');
+  if (successRedirectTimer) clearTimeout(successRedirectTimer);
+  successRedirectTimer = setTimeout(function() { resetOrder(); }, 7000);
 }
 
 function resetWizard() {
@@ -342,8 +361,14 @@ function resetWizard() {
 }
 
 function resetOrder() {
+  if (successRedirectTimer) { clearTimeout(successRedirectTimer); successRedirectTimer = null; }
   document.getElementById('wizard-wrap').style.display = 'block';
   document.getElementById('order-success').classList.remove('show');
   resetWizard();
   showPage('menu');
+}
+
+function goBackNow() {
+  if (successRedirectTimer) { clearTimeout(successRedirectTimer); successRedirectTimer = null; }
+  resetOrder();
 }

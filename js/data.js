@@ -22,6 +22,7 @@ window.State = {
 
   cart: [],
   orders: [],
+  paymentEmail: 'noahj.twilley@gmail.com',
   activeFilter: 'all',
   adminUnlocked: false,
 

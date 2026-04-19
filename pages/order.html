@@ -8,10 +8,20 @@
   </div>
   <div class="content">
     <div class="order-success" id="order-success">
-      <span class="sicon">🎉</span>
-      <h2>Order placed!</h2>
-      <p>Thank you! We're so excited to bake for you. You'll hear from us with a confirmation and pickup reminder.</p>
-      <button class="add-btn" onclick="resetOrder()">← Back to Menu</button>
+      <div class="success-check">
+        <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="26" cy="26" r="26" fill="#7aba8a"/>
+          <path d="M14 27L22 35L38 18" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 id="success-heading">Thank You!</h2>
+      <p class="success-subtext" id="success-subtext">Your order has been placed.</p>
+      <div class="success-payment-card" id="success-payment-card">
+        <div class="success-payment-title">💸 Payment Reminder</div>
+        <p>Please send <strong id="success-amount">$0.00</strong> via e-transfer to <a id="success-payment-link" href="#">email</a></p>
+      </div>
+      <p class="success-redirect">Redirecting you back in a moment…</p>
+      <a class="success-goback" href="#" onclick="goBackNow(); return false;">Go back now</a>
     </div>
     <div id="wizard-wrap">
       <!-- STEP INDICATOR -->
