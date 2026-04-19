@@ -53,15 +53,15 @@ emailjs.init(EMAILJS_PUBLIC_KEY);
 function sendOrderEmail(order) { /* MODIFIED: EmailJS send with silent error handling (CHANGE 1) */
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
     to_email:         'noahj.twilley@gmail.com',
-    order_id:         order.id,
-    customer_name:    order.name,
-    customer_email:   order.email,
-    items:            order.items,
-    total:            '$' + order.total,
-    fulfillment:      order.fulfillment,
+    order_id:         order.id || 'N/A',
+    customer_name:    order.name || 'N/A',
+    customer_email:   order.email || 'N/A',
+    items:            order.items || 'N/A',
+    total:            '$' + (order.total || '0.00'),
+    fulfillment:      order.fulfillment || 'N/A',
     delivery_address: order.address || 'N/A',
-    pickup_date:      order.date,
-    payment:          order.payment,
+    pickup_date:      order.date || 'N/A',
+    payment:          order.payment || 'N/A',
     notes:            order.notes || 'None'
   }).then(
     function() {
