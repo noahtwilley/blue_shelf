@@ -36,10 +36,10 @@
  */
 
 /* MODIFIED: replace these three values with your real EmailJS credentials (CHANGE 1) */
-var EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';   /* From Account > API Keys */
-var EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';   /* From Email Services */
-var EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';  /* From Email Templates */
-
+var EMAILJS_PUBLIC_KEY  = 'NyOukt1VkUYDWi3TY';   /* From Account > API Keys */
+var EMAILJS_SERVICE_ID  = 'service_rchs3of';   /* From Email Services */
+var EMAILJS_TEMPLATE_ID = 'template_slej5lx';  /* From Email Templates */
+``
 /* MODIFIED: initialize EmailJS with public key (CHANGE 1) */
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
