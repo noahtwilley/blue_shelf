@@ -3,6 +3,67 @@
 
 var successRedirectTimer = null;
 
+function buildOrderConfirmationUrl(name, total, email) {
+  var params = new URLSearchParams();
+  params.set('page', 'order');
+  params.set('order_success', '1');
+  params.set('name', name);
+  params.set('total', Number(total).toFixed(2));
+  params.set('email', email);
+  return window.location.pathname + '?' + params.toString();
+}
+
+function showOrderSuccessScreen(name, email, total) {
+  var firstName = (name || 'Customer').split(' ')[0];
+  var parsedTotal = Number(total);
+  var safeTotal = isNaN(parsedTotal) ? '0.00' : parsedTotal.toFixed(2);
+  var payEmail = window.State.paymentEmail || 'blueshelfmicrobakery@gmail.com';
+
+  document.getElementById('success-heading').textContent = 'Thank You, ' + firstName + '!';
+  document.getElementById('success-subtext').textContent = 'Your order has been placed. A confirmation email has been sent to ' + email + '.';
+  document.getElementById('success-amount').textContent = '$' + safeTotal;
+  document.getElementById('success-payment-link').textContent = payEmail;
+  document.getElementById('success-payment-link').href = 'mailto:' + payEmail;
+
+  document.getElementById('wizard-wrap').style.display = 'none';
+  document.getElementById('order-success').classList.add('show');
+
+  if (successRedirectTimer) clearTimeout(successRedirectTimer);
+  successRedirectTimer = setTimeout(function() { resetOrder(); }, 7000);
+}
+
+function hydrateOrderSuccessFromUrl() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('order_success') !== '1') return false;
+
+  showOrderSuccessScreen(
+    params.get('name') || 'Customer',
+    params.get('email') || 'your email',
+    params.get('total') || '0'
+  );
+
+  /* Clear confirmation params so the success view does not reappear on refresh */
+  window.history.replaceState({}, '', window.location.pathname);
+  return true;
+}
+
+(function initOrderPageFromUrl() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('page') !== 'order' || params.get('order_success') !== '1') return;
+
+  var attempts = 0;
+  var t = setInterval(function() {
+    attempts++;
+    if (typeof appReady === 'undefined' || !appReady || !document.getElementById('order-success')) {
+      if (attempts > 120) clearInterval(t);
+      return;
+    }
+    clearInterval(t);
+    showPage('order');
+    hydrateOrderSuccessFromUrl();
+  }, 50);
+})();
+
 /* ─── WIZARD NAVIGATION ─────────────────────────────────────── */
 function goToStep(n) {
   var S = window.State;
@@ -279,6 +340,10 @@ function submitWizardOrder() {
   var name = document.getElementById('f-name').value.trim();
   var email = document.getElementById('f-email').value.trim();
   var phone = document.getElementById('f-phone').value.trim();
+  var notes = document.getElementById('f-notes').value;
+  var submitBtn = document.getElementById('submit-btn');
+  var originalSubmitLabel = submitBtn.textContent;
+
   if (!name || !email || !phone) { showToast('Please fill in your name, email, and phone'); return; }
   if (!S.cart.length) { showToast('Your cart is empty!'); return; }
 
@@ -289,65 +354,77 @@ function submitWizardOrder() {
   var total = S.wizardState.mode === 'delivery' ? itemTotal + S.deliveryFee : itemTotal;
   var payment = document.querySelector('.payment-option.selected label').textContent.trim();
 
-  /* Deduct stock */
-  S.cart.forEach(function(c) {
+  var dbItems = S.cart.map(function(c) {
     var item = S.menuItems.find(function(i) { return i.id === c.id; });
-    if (item) item.stock = Math.max(0, item.stock - c.qty);
+    return {
+      name: item ? item.name : 'Unknown Item',
+      price: item ? Number(item.price) : 0
+    };
   });
 
-  /* MODIFIED: added fulfillment and address fields for CHANGE 1 (email), CHANGE 2 (day summary), CHANGE 5 (orders filter) */
-  var fulfillment = S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery';
-  var modeLabel = fulfillment === 'Pickup' ? 'Pickup' : 'Delivery - ' + S.wizardState.deliveryAddr;
-
-  var order = {
-    id:           'BSM-' + String(S.orders.length + 1).padStart(3, '0'),
-    name:         name,
-    email:        email,
-    phone:        phone,
-    date:         S.wizardState.date,
-    time:         modeLabel,             /* legacy field kept for compat */
-    payment:      payment,
-    items:        S.cart.map(function(c) {
-                    var item = S.menuItems.find(function(i) { return i.id === c.id; });
-                    return item.emoji + ' ' + item.name + ' \u00D7' + c.qty;
-                  }).join(', '),
-    total:        total.toFixed(2),
-    paid:         false,
-    received:     false,
-    notes:        document.getElementById('f-notes').value,
-    mode:         S.wizardState.mode,       /* legacy field kept for compat */
-    deliveryAddr: S.wizardState.deliveryAddr, /* legacy field kept for compat */
-    fulfillment:  fulfillment,              /* MODIFIED: 'Pickup' or 'Delivery' (CHANGE 1, 2, 5) */
-    address:      S.wizardState.deliveryAddr || null /* MODIFIED: clean address field (CHANGE 1, 2, 5) */
+  var orderPayload = {
+    name: name,
+    email: email,
+    phone: phone,
+    items: dbItems,
+    quantity: S.cart.reduce(function(sum, c) { return sum + c.qty; }, 0),
+    pickup_date: S.wizardState.date,
+    notes: notes,
+    total: Number(total.toFixed(2))
   };
 
-  S.orders.push(order);
-
-  /* MODIFIED: send email notification after order is committed to state (CHANGE 1) */
-  sendOrderEmail(order);
-
-  /* Populate confirmation screen with order details */
-  var firstName = name.split(' ')[0];
-  document.getElementById('success-heading').textContent = 'Thank You, ' + firstName + '!';
-  document.getElementById('success-subtext').textContent = 'Your order has been placed. A confirmation email has been sent to ' + email + '.';
-  var payCard = document.getElementById('success-payment-card');
-  if (payment.indexOf('E-Transfer') !== -1) {
-    document.getElementById('success-amount').textContent = '$' + total.toFixed(2);
-    var payEmail = window.State.paymentEmail || 'noahj.twilley@gmail.com';
-    document.getElementById('success-payment-link').textContent = payEmail;
-    document.getElementById('success-payment-link').href = 'mailto:' + payEmail;
-    payCard.style.display = '';
-  } else {
-    payCard.style.display = 'none';
+  if (typeof saveOrder !== 'function') {
+    showToast('Order service is not configured yet.');
+    return;
   }
 
-  S.cart = [];
-  updateCartBadge();
-  resetWizard();
-  document.getElementById('wizard-wrap').style.display = 'none';
-  document.getElementById('order-success').classList.add('show');
-  if (successRedirectTimer) clearTimeout(successRedirectTimer);
-  successRedirectTimer = setTimeout(function() { resetOrder(); }, 7000);
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Placing order...';
+
+  saveOrder(orderPayload).then(function(savedOrder) {
+    /* Deduct stock only after persistence succeeds */
+    S.cart.forEach(function(c) {
+      var item = S.menuItems.find(function(i) { return i.id === c.id; });
+      if (item) item.stock = Math.max(0, item.stock - c.qty);
+    });
+
+    var fulfillment = S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery';
+    var modeLabel = fulfillment === 'Pickup' ? 'Pickup' : 'Delivery - ' + S.wizardState.deliveryAddr;
+    var order = {
+      id:           savedOrder.id || ('BSM-' + String(S.orders.length + 1).padStart(3, '0')),
+      name:         name,
+      email:        email,
+      phone:        phone,
+      date:         S.wizardState.date,
+      time:         modeLabel,
+      payment:      payment,
+      items:        S.cart.map(function(c) {
+                      var item = S.menuItems.find(function(i) { return i.id === c.id; });
+                      return item.emoji + ' ' + item.name + ' \u00D7' + c.qty;
+                    }).join(', '),
+      total:        total.toFixed(2),
+      paid:         false,
+      received:     false,
+      notes:        notes,
+      mode:         S.wizardState.mode,
+      deliveryAddr: S.wizardState.deliveryAddr,
+      fulfillment:  fulfillment,
+      address:      S.wizardState.deliveryAddr || null
+    };
+
+    S.orders.push(order);
+    sendOrderEmail(order);
+
+    S.cart = [];
+    updateCartBadge();
+
+    window.location.href = buildOrderConfirmationUrl(name, total, email);
+  }).catch(function(err) {
+    console.warn('Supabase save failed:', err);
+    showToast('We could not place your order right now. Please try again.');
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalSubmitLabel;
+  });
 }
 
 function resetWizard() {

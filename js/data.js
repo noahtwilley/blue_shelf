@@ -22,7 +22,7 @@ window.State = {
 
   cart: [],
   orders: [],
-  paymentEmail: 'noahj.twilley@gmail.com',
+  paymentEmail: 'blueshelfmicrobakery@gmail.com',
   activeFilter: 'all',
   adminUnlocked: false,
 

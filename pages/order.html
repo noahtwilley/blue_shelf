@@ -18,7 +18,9 @@
       <p class="success-subtext" id="success-subtext">Your order has been placed.</p>
       <div class="success-payment-card" id="success-payment-card">
         <div class="success-payment-title">💸 Payment Reminder</div>
-        <p>Please send <strong id="success-amount">$0.00</strong> via e-transfer to <a id="success-payment-link" href="#">email</a></p>
+        <p>Please send <strong id="success-amount">$0.00</strong> via e-transfer to <a id="success-payment-link" onclick="navigator.clipboard.writeText('blueshelfmicrobakery@gmail.com'); this.textContent='Copied!'; setTimeout(() => this.textContent='blueshelfmicrobakery@gmail.com', 2000);" style="cursor:pointer;">
+  blueshelfmicrobakery@gmail.com
+</a></p>
       </div>
       <p class="success-redirect">Redirecting you back in a moment…</p>
       <a class="success-goback" href="#" onclick="goBackNow(); return false;">Go back now</a>

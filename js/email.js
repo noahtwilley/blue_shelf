@@ -30,8 +30,8 @@
  * Step 4: Copy your Public Key.
  *         In the EmailJS dashboard → Account → API Keys → Public Key.
  *
- * Step 5: Replace the three placeholder strings below with your real values.
- *         The site will send an email to noahj.twilley@gmail.com on every order.
+ * Step 5: Replace the three placeholder strings below with your real EmailJS credentials (CHANGE 1)
+ *         The site will send an email to the address specified in window.State.paymentEmail on every order.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -44,7 +44,7 @@ var EMAILJS_TEMPLATE_ID = 'template_slej5lx';  /* From Email Templates */
 emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
 
 /**
- * Send an order confirmation email to the admin (noahj.twilley@gmail.com).
+ * Send an order confirmation email to the admin (window.State.paymentEmail).
  * Called from submitWizardOrder() in order.js after the order is pushed to State.
  * Fails silently with a toast — never blocks order submission.
  *
@@ -52,17 +52,17 @@ emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
  */
 function sendOrderEmail(order) { /* MODIFIED: EmailJS send with silent error handling (CHANGE 1) */
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-    to_email:         'noahj.twilley@gmail.com',
+    email:         order.email || 'N/A',
     order_id:         order.id || 'N/A',
     customer_name:    order.name || 'N/A',
     customer_email:   order.email || 'N/A',
     items:            order.items || 'N/A',
     total:            '$' + (order.total || '0.00'),
-    fulfillment:      order.fulfillment || 'N/A',
+    //fulfillment:      order.fulfillment || 'N/A',
     delivery_address: order.address || 'N/A',
     pickup_date:      order.date || 'N/A',
     payment:          order.payment || 'N/A',
-    payment_email:    window.State.paymentEmail || 'N/A',
+    //payment_email:    window.State.paymentEmail || 'N/A',
     notes:            order.notes || 'None'
   }).then(
     function() {

@@ -67,7 +67,7 @@ function renderMenu() {
     }
 
     /* MODIFIED: category tag label for showcase (CHANGE 3) */
-    var catLabel = {bread:'Bread', pastry:'Pastry', sweet:'Sweet', cake:'Cake'}[item.cat] || item.cat;
+    var catLabel = {bread:'Bread', pastry:'Cookie', sweet:'Sweet', cake:'Cake'}[item.cat] || item.cat;
 
     /* MODIFIED: removed Add+ button, stock count, sold-out overlay — showcase mode (CHANGE 3) */
     return '<div class="menu-card">' +
