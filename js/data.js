@@ -22,7 +22,7 @@ window.State = {
 
   cart: [],
   orders: [],
-  paymentEmail: 'blueshelfmicrobakery@gmail.com',
+  paymentEmail: (window.__ENV__ && window.__ENV__.PAYMENT_EMAIL) || 'blueshelfmicrobakery@gmail.com',
   activeFilter: 'all',
   adminUnlocked: false,
 
@@ -51,7 +51,11 @@ window.State = {
   daySummarySliderMode: {},        /* MODIFIED: 'fulfillment' or 'items' per day (CHANGE 2) */
 
   /* MODIFIED: orders filter state for Pickup/Delivery segmented control (CHANGE 5) */
-  ordersFilter: 'all'              /* 'all', 'pickup', or 'delivery' */
+  ordersFilter: 'all',             /* 'all', 'pickup', or 'delivery' */
+
+  /* Daily availability from Supabase: keyed by ISO date, value is array of availability rows.
+     undefined = not yet fetched; [] = fetched but no rows (fall back to bakingDays); [...] = live data */
+  dailyAvailability: {}
 };
 
 /* Timezone-safe ISO date helper: returns "YYYY-MM-DD" in local time */

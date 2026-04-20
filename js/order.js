@@ -150,6 +150,10 @@ function selectDate(dateStr) {
   window.State.wizardState.date = dateStr;
   renderDatePicker();
   document.getElementById('btn-step1-next').disabled = false;
+  /* Pre-fetch availability so Step 3 renders with live stock counts */
+  if (typeof refreshAvailability === 'function') {
+    refreshAvailability(dateStr).then(function() { updateSoldOutBanner(dateStr); });
+  }
 }
 
 /* ─── STEP 2: PICKUP / DELIVERY ───────────────────────────── */
@@ -192,8 +196,105 @@ function updateNextButtonState() {
 function renderProductsStep() {
   var S = window.State;
   var grid = document.getElementById('wizard-products-grid');
+  var date = S.wizardState.date;
 
-  /* Only show items that are on the selected baking day's items list */
+  /* === LIVE AVAILABILITY PATH === */
+  var dayAvail = S.dailyAvailability && S.dailyAvailability[date];
+
+  if (dayAvail === undefined) {
+    /* Not yet fetched — show loading state and trigger fetch */
+    grid.innerHTML = '<p style="color:var(--text-muted);padding:2rem 0;grid-column:1/-1">Loading availability…</p>';
+    document.getElementById('floating-subtotal').classList.add('hide');
+    if (typeof refreshAvailability === 'function') {
+      refreshAvailability(date).then(function() { renderProductsStep(); });
+    }
+    return;
+  }
+
+  if (dayAvail && dayAvail.length > 0) {
+    /* Sync live remaining into item.stock so changeQty() caps correctly */
+    dayAvail.forEach(function(row) {
+      var mi = S.menuItems.find(function(i) { return i.name === row.item_name; });
+      if (mi) mi.stock = Math.max(0, typeof row.remaining === 'number' ? row.remaining : row.total_available);
+    });
+
+    /* Build merged items: DB availability row + matching menuItem metadata */
+    var mergedItems = dayAvail.filter(function(row) {
+      return row.is_active || row.total_available > 0;
+    }).map(function(row) {
+      var mi = S.menuItems.find(function(i) { return i.name === row.item_name; }) || {};
+      return {
+        id:             mi.id || null,
+        name:           row.item_name,
+        price:          row.item_price,
+        emoji:          row.item_emoji || mi.emoji || '🧁',
+        photo:          mi.photo || '',
+        cat:            mi.cat   || 'bread',
+        desc:           mi.desc  || '',
+        customizations: mi.customizations || [],
+        stock:          Math.max(0, typeof row.remaining === 'number' ? row.remaining : row.total_available),
+        soldOut:        !row.is_active || row.remaining <= 0
+      };
+    }).filter(function(item) { return item.id !== null; }); /* skip rows not in State.menuItems */
+
+    if (!mergedItems.length) {
+      grid.innerHTML = '<p style="color:var(--text-muted);padding:2rem 0;grid-column:1/-1">No products available for this date. Try a different baking day.</p>';
+      document.getElementById('floating-subtotal').classList.add('hide');
+      return;
+    }
+
+    grid.innerHTML = mergedItems.map(function(item) {
+      var cartItem = S.cart.find(function(c) { return c.id === item.id; });
+      var qty = cartItem ? cartItem.qty : 0;
+      var imgHtml;
+      if (item.photo) {
+        imgHtml = '<div class="wizard-product-img">' +
+          '<img src="' + item.photo + '" alt="' + item.name + '" style="width:100%;height:100%;object-fit:cover" ' +
+            'onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'" />' +
+          '<span style="display:none;font-size:3.5rem;align-items:center;justify-content:center;' +
+            'width:100%;height:100%;background:' + (bgMap[item.cat] || 'var(--cream-dark)') + '">' + item.emoji + '</span>' +
+        '</div>';
+      } else {
+        imgHtml = '<div class="wizard-product-img" style="background:' + (bgMap[item.cat] || 'var(--cream-dark)') + '">' +
+          '<span>' + item.emoji + '</span>' +
+        '</div>';
+      }
+      var stockLabel = item.soldOut
+        ? '<span class="stock-sold-out">Sold Out</span>'
+        : '<span style="font-size:0.78rem;color:' + (item.stock <= 3 ? 'var(--red)' : 'var(--text-muted)') + '">' + item.stock + ' left</span>';
+
+      return '<div class="wizard-product-card' + (item.soldOut ? ' wizard-product-card--soldout' : '') + '" data-item-id="' + item.id + '">' +
+        imgHtml +
+        (item.soldOut ? '<div class="soldout-overlay">Sold Out</div>' : '') +
+        '<div class="wizard-product-body">' +
+          '<div class="wizard-product-top">' +
+            '<h3>' + item.name + '</h3>' +
+            '<span class="wizard-product-price">$' + item.price + '</span>' +
+          '</div>' +
+          '<p>' + item.desc + '</p>' +
+          '<div class="wizard-product-footer">' +
+            stockLabel +
+            '<div class="wizard-qty-controls">' +
+              '<button class="qty-btn" onclick="changeQty(' + item.id + ',-1)"' + (qty === 0 || item.soldOut ? ' style="visibility:hidden"' : '') + '>\u2212</button>' +
+              '<span class="qty-num" style="min-width:24px">' + qty + '</span>' +
+              '<button class="qty-btn" onclick="changeQty(' + item.id + ',1)"' + (qty >= item.stock || item.soldOut ? ' disabled' : '') + '>+</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        (item.customizations && item.customizations.length > 0 && qty > 0 ?
+          '<div style="padding:1rem;border-top:1px solid var(--cream-dark);background:var(--cream)">' +
+            '<div style="font-size:0.8rem;font-weight:600;margin-bottom:0.75rem;color:var(--navy)">Customizations</div>' +
+            item.customizations.map(function(cust, idx) { return renderCustomizationField(item.id, idx, cust); }).join('') +
+          '</div>' : '') +
+      '</div>';
+    }).join('');
+
+    document.getElementById('floating-subtotal').classList.remove('hide');
+    updateSubtotalBar();
+    return;
+  }
+
+  /* === FALLBACK PATH: bakingDays + menuItems (no daily_availability rows for this date) === */
   var selectedDay = S.bakingDays[S.wizardState.date];
   var dayItemIds = (selectedDay && selectedDay.items) ? selectedDay.items.map(function(x) { return x.id; }) : [];
 
@@ -357,8 +458,9 @@ function submitWizardOrder() {
   var dbItems = S.cart.map(function(c) {
     var item = S.menuItems.find(function(i) { return i.id === c.id; });
     return {
-      name: item ? item.name : 'Unknown Item',
-      price: item ? Number(item.price) : 0
+      name:  item ? item.name  : 'Unknown Item',
+      price: item ? Number(item.price) : 0,
+      qty:   c.qty
     };
   });
 
@@ -373,7 +475,7 @@ function submitWizardOrder() {
     total: Number(total.toFixed(2))
   };
 
-  if (typeof saveOrder !== 'function') {
+  if (typeof placeOrderRpc !== 'function' && typeof saveOrder !== 'function') {
     showToast('Order service is not configured yet.');
     return;
   }
@@ -381,7 +483,8 @@ function submitWizardOrder() {
   submitBtn.disabled = true;
   submitBtn.textContent = 'Placing order...';
 
-  saveOrder(orderPayload).then(function(savedOrder) {
+  var orderFn = typeof placeOrderRpc === 'function' ? placeOrderRpc : saveOrder;
+  orderFn(orderPayload).then(function(savedOrder) {
     /* Deduct stock only after persistence succeeds */
     S.cart.forEach(function(c) {
       var item = S.menuItems.find(function(i) { return i.id === c.id; });

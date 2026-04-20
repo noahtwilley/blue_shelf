@@ -147,3 +147,34 @@
   .option-card { padding: 1.5rem; }
   .floating-subtotal { padding: 0.75rem 4%; }
 }
+
+/* AVAILABILITY BADGE (order page hero) */
+.avail-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.3rem 0.85rem; border-radius: 50px; font-size: 0.8rem; font-weight: 600;
+  margin-top: 0.75rem; letter-spacing: 0.01em;
+}
+.avail-badge--open   { background: var(--green-light); color: #3a7a4a; }
+.avail-badge--closed { background: var(--red-light);   color: #a03030; }
+
+/* SOLD-OUT BANNER (shown inside wizard-wrap when date is fully sold out) */
+.soldout-banner {
+  background: var(--red-light); border: 1px solid var(--red); border-radius: var(--radius);
+  padding: 1rem 1.5rem; margin-bottom: 1.5rem; color: #a03030; font-weight: 600;
+  font-size: 0.92rem; text-align: center; line-height: 1.55;
+}
+
+/* SOLD-OUT PRODUCT CARD */
+.wizard-product-card--soldout { opacity: 0.55; }
+.wizard-product-card--soldout .qty-btn { pointer-events: none; }
+
+/* Sold-out overlay badge (top-right corner of card image) */
+.soldout-overlay {
+  position: absolute; top: 0.6rem; right: 0.6rem; z-index: 2;
+  background: var(--red); color: #fff; font-size: 0.68rem; font-weight: 700;
+  padding: 0.2rem 0.55rem; border-radius: 50px; text-transform: uppercase; letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+/* "Sold Out" stock label (bottom-left of product footer) */
+.stock-sold-out { font-size: 0.78rem; color: var(--red); font-weight: 600; }

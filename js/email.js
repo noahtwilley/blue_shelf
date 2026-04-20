@@ -35,13 +35,18 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-/* MODIFIED: replace these three values with your real EmailJS credentials (CHANGE 1) */
-var EMAILJS_PUBLIC_KEY  = 'NyOukt1VkUYDWi3TY';   /* From Account > API Keys */
-var EMAILJS_SERVICE_ID  = 'service_rchs3of';   /* From Email Services */
-var EMAILJS_TEMPLATE_ID = 'template_slej5lx';  /* From Email Templates */
+/* Values are sourced from window.__ENV__ (provided by local js/env.js). */
+var EMAILJS_PUBLIC_KEY  = (window.__ENV__ && window.__ENV__.EMAILJS_PUBLIC_KEY) || '';
+var EMAILJS_SERVICE_ID  = (window.__ENV__ && window.__ENV__.EMAILJS_SERVICE_ID) || '';
+var EMAILJS_TEMPLATE_ID = (window.__ENV__ && window.__ENV__.EMAILJS_TEMPLATE_ID) || '';
+var EMAILJS_CONFIGURED = !!(EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID);
 
-/* MODIFIED: initialize EmailJS with public key — v4 API requires an object, not a plain string (CHANGE 1) */
-emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+if (EMAILJS_CONFIGURED) {
+  /* v4 API requires an object, not a plain string */
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+} else {
+  console.warn('EmailJS is not configured. Add keys to js/env.js.');
+}
 
 /**
  * Send an order confirmation email to the admin (window.State.paymentEmail).
@@ -51,6 +56,11 @@ emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
  * @param {Object} order - The order object freshly pushed to window.State.orders
  */
 function sendOrderEmail(order) { /* MODIFIED: EmailJS send with silent error handling (CHANGE 1) */
+  if (!EMAILJS_CONFIGURED) {
+    showToast('Order placed! (Email service not configured)');
+    return;
+  }
+
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
     email:         order.email || 'N/A',
     order_id:         order.id || 'N/A',
@@ -62,7 +72,7 @@ function sendOrderEmail(order) { /* MODIFIED: EmailJS send with silent error han
     delivery_address: order.address || 'N/A',
     pickup_date:      order.date || 'N/A',
     payment:          order.payment || 'N/A',
-    //payment_email:    window.State.paymentEmail || 'N/A',
+    payment_email:    (window.__ENV__ && window.__ENV__.PAYMENT_EMAIL) || window.State.paymentEmail || 'N/A',
     notes:            order.notes || 'None'
   }).then(
     function() {

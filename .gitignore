@@ -1,0 +1,9 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+js/env.js
+
+# OS/editor noise
+.DS_Store
+.vscode/*.log

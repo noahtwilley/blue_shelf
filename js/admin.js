@@ -13,6 +13,37 @@ function getOrderAddress(o) {
   return o.address || o.deliveryAddr || null;
 }
 
+/* Convert a raw Supabase orders row into the shape State.orders expects. */
+function normalizeDbOrder(row) {
+  /* items in DB is JSONB [{name, price}]; convert to a readable string for renderers */
+  var itemStr = '';
+  if (Array.isArray(row.items)) {
+    itemStr = row.items.map(function(it) { return it.name || 'Item'; }).join(', ');
+  } else if (typeof row.items === 'string') {
+    itemStr = row.items;
+  }
+  var fulfillment = row.fulfillment || 'Pickup';
+  return {
+    id:           'BSM-' + String(row.id).padStart(3, '0'),
+    _dbId:        row.id,          /* keep DB id to preserve paid/received across refreshes */
+    name:         row.name         || '',
+    email:        row.email        || '',
+    phone:        row.phone        || '',
+    date:         row.pickup_date  || '',
+    time:         fulfillment,
+    payment:      row.payment      || 'N/A',
+    items:        itemStr,
+    total:        parseFloat(row.total || 0).toFixed(2),
+    paid:         row.paid         || false,
+    received:     row.received     || false,
+    notes:        row.notes        || '',
+    mode:         fulfillment === 'Pickup' ? 'pickup' : 'delivery',
+    deliveryAddr: row.delivery_address || null,
+    fulfillment:  fulfillment,
+    address:      row.delivery_address || null
+  };
+}
+
 /* ─── LOCK / UNLOCK ─────────────────────────────────────────── */
 function unlockAdmin() {
   if (document.getElementById('admin-pwd').value === 'blueshelf') {
@@ -35,7 +66,47 @@ function lockAdmin() {
 
 function renderAdmin() {
   if (!window.State.adminUnlocked) return;
-  renderOrdersTab();
+  loadOrdersFromSupabase();
+}
+
+/**
+ * Fetch the full order list from Supabase and refresh admin views.
+ * Falls back to in-memory State.orders if fetch fails or Supabase is not configured.
+ */
+function loadOrdersFromSupabase() {
+  var wrap = document.getElementById('orders-table-wrap');
+  if (wrap) {
+    wrap.innerHTML = '<p style="color:var(--text-muted);font-size:0.88rem;text-align:center;padding:2rem 0">Loading orders from database…</p>';
+  }
+
+  if (typeof fetchOrders !== 'function') {
+    /* supabase.js not loaded yet — fall back to in-memory */
+    renderOrdersTab();
+    return;
+  }
+
+  fetchOrders().then(function(rows) {
+    /* Preserve any in-memory paid/received toggles the admin already made this session */
+    var sessionState = {};
+    window.State.orders.forEach(function(o) {
+      if (o._dbId !== undefined) sessionState[o._dbId] = {paid: o.paid, received: o.received};
+    });
+
+    window.State.orders = rows.map(function(row) {
+      var normalized = normalizeDbOrder(row);
+      if (sessionState[row.id]) {
+        normalized.paid     = sessionState[row.id].paid;
+        normalized.received = sessionState[row.id].received;
+      }
+      return normalized;
+    });
+
+    renderOrdersTab();
+  }).catch(function(err) {
+    console.warn('Could not load orders from Supabase:', err);
+    showToast('Could not reach database — showing local orders only.');
+    renderOrdersTab();
+  });
 }
 
 /* ─── ORDERS TAB (CHANGE 5: filter bar + fulfillment column) ── */
@@ -86,10 +157,16 @@ function renderOrdersTab() {
       'color:' + (active ? 'var(--cream)' : 'var(--text-muted)') + '">' +
       label + '</button>';
   }
-  var filterBar = '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1rem">' +
+  var filterBar = '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">' +
     filterBtn('all', 'All Orders') +
     filterBtn('pickup', '\uD83C\uDFE0 Pickup Only') +
     filterBtn('delivery', '\uD83D\uDE97 Delivery Only') +
+    '<button onclick="loadOrdersFromSupabase()" style="' +
+      'padding:0.4rem 1rem;border-radius:50px;cursor:pointer;margin-left:auto;' +
+      'font-family:\'DM Sans\',sans-serif;font-size:0.82rem;font-weight:600;transition:all 0.2s;' +
+      'border:1.5px solid var(--blue);background:var(--white);color:var(--blue-dark)">' +
+      '\u21BB Refresh' +
+    '</button>' +
   '</div>';
 
   if (!filteredOrders.length) {
@@ -716,3 +793,127 @@ function removeCalendarItem(iso, idx) {
     renderBakingDaysTab();
   }
 }
+
+/* ─── DAILY AVAILABILITY TAB ────────────────────────────────── */
+
+/**
+ * Main render entry for the Availability tab.
+ * Reads the date input value (defaults to today), fetches rows from Supabase,
+ * and builds the editable availability table.
+ */
+function renderAvailabilityTab() {
+  var dateInput = document.getElementById('avail-date-input');
+  if (dateInput && !dateInput.value) dateInput.value = toLocalISO(new Date());
+  var date = (dateInput && dateInput.value) || toLocalISO(new Date());
+  var contentEl = document.getElementById('avail-content');
+  if (!contentEl) return;
+  contentEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.88rem;text-align:center;padding:2rem 0">Loading…</p>';
+
+  if (typeof fetchAvailability !== 'function') {
+    contentEl.innerHTML = '<p style="color:var(--red);padding:1rem">Supabase not configured — add keys to js/env.js.</p>';
+    return;
+  }
+
+  fetchAvailability(date).then(function(rows) {
+    if (!rows || !rows.length) {
+      contentEl.innerHTML =
+        '<p style="color:var(--text-muted);font-size:0.88rem;text-align:center;padding:2rem 0">' +
+          'No availability set for this date. Use <strong>Seed from Menu</strong> to create rows.' +
+        '</p>';
+      return;
+    }
+    contentEl.innerHTML = _buildAvailabilityTable(rows, date);
+  }).catch(function(err) {
+    contentEl.innerHTML = '<p style="color:var(--red);padding:1rem">Error loading availability: ' + err.message + '</p>';
+  });
+}
+
+function _buildAvailabilityTable(rows, date) {
+  var inputStyle = 'width:72px;padding:0.3rem 0.4rem;border-radius:6px;border:1.5px solid var(--cream-dark);font-size:0.88rem;text-align:center;outline:none;font-family:\'DM Sans\'';
+  var header =
+    '<div style="display:grid;grid-template-columns:2fr 80px 100px 70px 60px 70px;gap:0.5rem;' +
+      'padding:0.5rem 0.75rem;font-size:0.72rem;font-weight:700;text-transform:uppercase;' +
+      'letter-spacing:0.07em;color:var(--text-muted);border-bottom:2px solid var(--cream-dark)">' +
+      '<span>Item</span><span>Price</span><span style="text-align:center">Available</span>' +
+      '<span style="text-align:center">Ordered</span><span style="text-align:center">Active</span><span></span>' +
+    '</div>';
+
+  var rowsHtml = rows.map(function(row) {
+    return '<div style="display:grid;grid-template-columns:2fr 80px 100px 70px 60px 70px;gap:0.5rem;' +
+      'align-items:center;padding:0.65rem 0.75rem;border-bottom:1px solid var(--cream-dark)" id="avail-row-' + row.id + '">' +
+      '<span style="font-weight:600;font-size:0.88rem;color:var(--navy)">' + row.item_emoji + ' ' + row.item_name + '</span>' +
+      '<span style="font-size:0.85rem;color:var(--text-muted)">$' + Number(row.item_price).toFixed(2) + '</span>' +
+      '<div style="text-align:center">' +
+        '<input type="number" style="' + inputStyle + '" min="0" value="' + row.total_available + '" id="avail-qty-' + row.id + '" />' +
+      '</div>' +
+      '<span style="font-size:0.88rem;color:var(--text-muted);text-align:center">' + (row.total_ordered || 0) + '</span>' +
+      '<div style="text-align:center">' +
+        '<button class="inv-toggle' + (row.is_active ? ' on' : '') + '" id="avail-toggle-' + row.id + '" ' +
+          'onclick="toggleAvailRowActive(this)" title="Toggle active"></button>' +
+      '</div>' +
+      '<button class="add-btn" style="padding:0.3rem 0.6rem;font-size:0.75rem" ' +
+        'onclick="saveAvailRow(\'' + date + '\',\'' + row.item_name.replace(/'/g, "\\'") + '\',' + Number(row.item_price) + ',\'' + row.item_emoji + '\',' + row.id + ')">Save</button>' +
+    '</div>';
+  }).join('');
+
+  return header + rowsHtml;
+}
+
+/** Save a single availability row back to Supabase via upsert. */
+function saveAvailRow(date, itemName, itemPrice, itemEmoji, rowId) {
+  var qtyInput  = document.getElementById('avail-qty-' + rowId);
+  var toggleBtn = document.getElementById('avail-toggle-' + rowId);
+  var qty      = Math.max(0, parseInt((qtyInput && qtyInput.value) || 0) || 0);
+  var isActive = toggleBtn ? toggleBtn.classList.contains('on') : true;
+
+  if (typeof upsertAvailability !== 'function') { showToast('Supabase not configured.'); return; }
+
+  upsertAvailability({
+    date:            date,
+    item_name:       itemName,
+    item_price:      Number(itemPrice),
+    item_emoji:      itemEmoji,
+    total_available: qty,
+    is_active:       isActive
+  }).then(function() {
+    showToast(itemEmoji + ' ' + itemName + ' saved');
+    /* Invalidate cache so the order form re-fetches next time */
+    if (window.State.dailyAvailability) delete window.State.dailyAvailability[date];
+    renderAvailabilityTab();
+  }).catch(function(err) { showToast('Save failed: ' + err.message); });
+}
+
+/** Toggle the active state of an availability row (visual only — persisted via Save). */
+function toggleAvailRowActive(btn) { btn.classList.toggle('on'); }
+
+/**
+ * Populate today's (or selected date's) availability from the current in-memory menu items.
+ * Only creates rows that don't exist yet.
+ */
+function seedAvailabilityFromMenu(date) {
+  var S = window.State;
+  var activeItems = S.menuItems.filter(function(i) { return i.active; });
+  if (!activeItems.length) { showToast('No active menu items to seed'); return; }
+  if (typeof upsertAvailability !== 'function') { showToast('Supabase not configured.'); return; }
+
+  var promises = activeItems.map(function(item) {
+    return upsertAvailability({
+      date:            date,
+      item_name:       item.name,
+      item_price:      Number(item.price),
+      item_emoji:      item.emoji,
+      total_available: item.stock || 0,
+      is_active:       true
+    });
+  });
+
+  Promise.all(promises).then(function() {
+    showToast('Seeded ' + activeItems.length + ' items for ' + date);
+    if (window.State.dailyAvailability) delete window.State.dailyAvailability[date];
+    renderAvailabilityTab();
+  }).catch(function(err) { showToast('Seed failed: ' + err.message); });
+}
+
+/** Called when the date input in the Availability tab changes. */
+function changeAvailDate() { renderAvailabilityTab(); }
+

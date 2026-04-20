@@ -27,6 +27,7 @@
         <button class="admin-sub-tab" data-tab="summary" onclick="showAdminTab('summary')">📅 Day Summary</button>
         <button class="admin-sub-tab" data-tab="products" onclick="showAdminTab('products')">🧁 Products</button>
         <button class="admin-sub-tab" data-tab="bakingdays" onclick="showAdminTab('bakingdays')">📆 Baking Days</button>
+        <button class="admin-sub-tab" data-tab="availability" onclick="showAdminTab('availability')">📊 Availability</button>
       </div>
       <!-- Tab Panes -->
       <div class="admin-tab active" id="admin-tab-orders">
@@ -79,6 +80,27 @@
             <span class="tag tag-blue" id="baking-days-count" style="margin-top:0.5rem">0 days</span>
           </div>
           <div id="baking-days-list"></div>
+        </div>
+      </div>
+      <div class="admin-tab" id="admin-tab-availability">
+        <div class="admin-card">
+          <div class="admin-card-title">
+            <span>Daily Availability</span>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+              <input type="date" id="avail-date-input" onchange="changeAvailDate()"
+                style="padding:0.35rem 0.6rem;border-radius:8px;border:1.5px solid var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:0.82rem;outline:none" />
+              <button class="add-btn" style="padding:0.35rem 0.85rem;font-size:0.8rem"
+                onclick="seedAvailabilityFromMenu(document.getElementById('avail-date-input').value || '<?= toLocalISO(new Date()) ?>')">
+                Seed from Menu
+              </button>
+            </div>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.55">
+            Set how many of each item are available on a given date. Orders placed through the wizard
+            check this stock in real time. Use <strong>Seed from Menu</strong> to pre-fill today's rows
+            from your active products.
+          </p>
+          <div id="avail-content"></div>
         </div>
       </div>
     </div>

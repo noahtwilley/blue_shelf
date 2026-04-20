@@ -5,6 +5,7 @@
   <div class="page-hero" data-emoji="🛍️">
     <h1>Your Order</h1>
     <p>Review your picks, choose a pickup slot, and place your order below.</p>
+    <span id="availability-badge" class="avail-badge" style="display:none"></span>
   </div>
   <div class="content">
     <div class="order-success" id="order-success">
@@ -26,6 +27,10 @@
       <a class="success-goback" href="#" onclick="goBackNow(); return false;">Go back now</a>
     </div>
     <div id="wizard-wrap">
+      <!-- SOLD OUT BANNER (shown when all items for selected date are sold out) -->
+      <div id="soldout-banner" class="soldout-banner" style="display:none">
+        😔 All items for this date are sold out. Please go back and choose a different baking day.
+      </div>
       <!-- STEP INDICATOR -->
       <div class="wizard-progress">
         <div class="wizard-steps">
