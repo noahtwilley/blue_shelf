@@ -46,13 +46,13 @@ function normalizeDbOrder(row) {
 
 /* ─── LOCK / UNLOCK ─────────────────────────────────────────── */
 function unlockAdmin() {
-  if (document.getElementById('admin-pwd').value === 'blueshelf') {
+  if (document.getElementById('admin-pwd').value === 'blueshelf123') {
     window.State.adminUnlocked = true;
     document.getElementById('admin-lock').style.display = 'none';
     document.getElementById('admin-dash').classList.add('unlocked');
     renderAdmin();
   } else {
-    showToast('Incorrect password. Hint: blueshelf');
+    showToast('Incorrect password. Hint: noneofyourbusiness');
     document.getElementById('admin-pwd').value = '';
   }
 }
