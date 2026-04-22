@@ -191,3 +191,47 @@ function deleteOrder(dbId) {
 }
 
 window.deleteOrder = deleteOrder;
+
+/**
+ * Fetch all rows from the active_days table.
+ * Returns [{date, is_active, updated_at}] — one row per specific date.
+ */
+function fetchActiveDays() {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.reject(new Error('Supabase not configured.'));
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/active_days?select=*', {
+    method: 'GET',
+    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('fetchActiveDays failed (' + r.status + '): ' + t); });
+    return r.json();
+  });
+}
+
+/**
+ * Upsert a single active_days row keyed on `date`.
+ * @param {string}  date     - ISO date string e.g. "2026-04-24"
+ * @param {boolean} isActive - new on/off value
+ */
+function upsertActiveDay(date, isActive) {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.reject(new Error('Supabase not configured.'));
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/active_days?on_conflict=date', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': key,
+      'Authorization': 'Bearer ' + key,
+      'Prefer': 'resolution=merge-duplicates,return=representation'
+    },
+    body: JSON.stringify({ date: date, is_active: isActive, updated_at: new Date().toISOString() })
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('upsertActiveDay failed (' + r.status + '): ' + t); });
+    return r.json();
+  });
+}
+
+window.fetchActiveDays = fetchActiveDays;
+window.upsertActiveDay = upsertActiveDay;

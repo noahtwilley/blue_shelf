@@ -702,8 +702,7 @@ function renderScheduleTab() {
     var isPast   = iso < todayISO;
     var isToday  = iso === todayISO;
     var isSel    = S.calendarSelectedDate === iso;
-    var dayData  = S.bakingDays[iso];
-    var isOn     = dayData && dayData.active;
+    var isOn     = !!(S.activeDays && S.activeDays[iso]);
 
     var cls = 'calendar-cell';
     if (isPast)  cls += ' past';
@@ -754,7 +753,7 @@ function _schedEditorShell(iso) {
   var S     = window.State;
   var dt    = new Date(iso + 'T00:00:00');
   var label = dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  var isOn  = !!(S.bakingDays[iso] && S.bakingDays[iso].active);
+  var isOn  = !!(S.activeDays && S.activeDays[iso]);
 
   return '<div class="day-editor">' +
     /* Header row: date label + day-active toggle */
@@ -858,36 +857,49 @@ function selectScheduleDate(iso) {
   renderScheduleTab();
 }
 
-/* Toggle "Day Active" for a date.  Mutates State.bakingDays and updates the DOM
-   in-place without re-rendering the item rows (unsaved qty values are preserved). */
+/* Toggle "Day Active" for the specific date `iso` only.
+   Persists to the active_days Supabase table, re-seeds bakingDays, and
+   updates only that calendar cell in-place (no full re-render). */
 function toggleScheduleDay(iso) {
   var S = window.State;
-  if (!S.bakingDays[iso]) {
-    S.bakingDays[iso] = { active: true, notes: '', pickup: true, items: [] };
+  if (!S.activeDays) S.activeDays = {};
+  var newActive = !S.activeDays[iso];
+
+  if (newActive) {
+    S.activeDays[iso] = true;
   } else {
-    S.bakingDays[iso].active = !S.bakingDays[iso].active;
+    delete S.activeDays[iso];
   }
-  var isOn = S.bakingDays[iso].active;
+
+  /* Persist to Supabase — fire-and-forget, toast on error only */
+  if (typeof upsertActiveDay === 'function') {
+    upsertActiveDay(iso, newActive).catch(function(err) {
+      showToast('Could not save day setting: ' + err.message);
+    });
+  }
+
+  /* Re-seed bakingDays so the order wizard date-picker reflects the change */
+  if (typeof reseedBakingDays === 'function') reseedBakingDays();
 
   /* Update toggle button */
   var toggleBtn = document.getElementById('sched-day-toggle');
-  if (toggleBtn) toggleBtn.classList.toggle('on', isOn);
+  if (toggleBtn) toggleBtn.classList.toggle('on', newActive);
 
   /* Update status text */
   var statusEl = document.getElementById('sched-day-status');
-  if (statusEl) statusEl.textContent = isOn
+  if (statusEl) statusEl.textContent = newActive
     ? 'On \u2014 visible in order form'
     : 'Off \u2014 hidden from order form';
 
-  /* Add / remove dot on the calendar cell without re-rendering */
+  /* Add / remove dot on this specific calendar cell only */
   var cell = document.querySelector('.calendar-cell[data-sched-iso="' + iso + '"]');
   if (cell) {
     var dot = cell.querySelector('.dot');
-    if (isOn && !dot) {
+    if (newActive && !dot) {
       var newDot = document.createElement('span');
       newDot.className = 'dot';
       cell.appendChild(newDot);
-    } else if (!isOn && dot) {
+    } else if (!newActive && dot) {
       dot.remove();
     }
   }

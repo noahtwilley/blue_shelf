@@ -55,7 +55,11 @@ window.State = {
 
   /* Daily availability from Supabase: keyed by ISO date, value is array of availability rows.
      undefined = not yet fetched; [] = fetched but no rows (fall back to bakingDays); [...] = live data */
-  dailyAvailability: {}
+  dailyAvailability: {},
+
+  /* Specific dates that are active for ordering, keyed by ISO date e.g. "2026-04-24": true.
+     Populated by initActiveDays() from the active_days Supabase table. */
+  activeDays: {}
 };
 
 /* Timezone-safe ISO date helper: returns "YYYY-MM-DD" in local time */
@@ -66,20 +70,43 @@ function toLocalISO(d) {
   return y + '-' + m + '-' + day;
 }
 
-/* Seed default baking days for the next 8 weeks (Mon/Wed/Fri active)
-   Each seeded day includes all currently active menu items. */
-(function seedBakingDays() {
+/* Seed / re-seed State.bakingDays for the next 56 days based on State.activeDays.
+   activeDays is keyed by ISO date string — only those specific dates are active. */
+function reseedBakingDays() {
   var S = window.State;
+  S.bakingDays = {};
   var today = new Date();
-  today.setHours(0,0,0,0);
-  var defaultItems = S.menuItems.filter(function(i) { return i.active; }).map(function(i) { return {id: i.id, qty: i.stock}; });
+  today.setHours(0, 0, 0, 0);
+  var defaultItems = S.menuItems.filter(function(i) { return i.active; })
+    .map(function(i) { return {id: i.id, qty: i.stock}; });
   for (var i = 0; i < 56; i++) {
     var d = new Date(today);
     d.setDate(d.getDate() + i);
-    var dow = d.getDay(); /* 0=Sun */
     var iso = toLocalISO(d);
-    if (dow === 1 || dow === 3 || dow === 5) { /* Mon, Wed, Fri */
-      S.bakingDays[iso] = {active: true, notes: '', pickup: true, items: defaultItems.map(function(x) { return {id: x.id, qty: x.qty}; })};
+    if (S.activeDays[iso]) {
+      S.bakingDays[iso] = {active: true, notes: '', pickup: true,
+        items: defaultItems.map(function(x) { return {id: x.id, qty: x.qty}; })};
     }
   }
-})();
+}
+
+/* Initial seed — empty until Supabase loads, since active days are now date-specific. */
+reseedBakingDays();
+
+/**
+ * Fetch active_days from Supabase, update State.activeDays (keyed by ISO date),
+ * and re-seed bakingDays so the order wizard reflects the persisted schedule.
+ */
+function initActiveDays() {
+  if (typeof fetchActiveDays !== 'function') return;
+  fetchActiveDays().then(function(rows) {
+    var S = window.State;
+    S.activeDays = {};
+    (rows || []).forEach(function(row) {
+      if (row.date && row.is_active) S.activeDays[row.date] = true;
+    });
+    reseedBakingDays();
+  }).catch(function(err) {
+    console.warn('Could not load active days from Supabase:', err.message);
+  });
+}
