@@ -163,3 +163,31 @@ function placeOrderRpc(orderData) {
 window.fetchAvailability  = fetchAvailability;
 window.upsertAvailability = upsertAvailability;
 window.placeOrderRpc      = placeOrderRpc;
+
+/**
+ * Delete a single order row by its numeric database ID.
+ * Returns a resolved Promise on success, rejected on any HTTP error.
+ */
+function deleteOrder(dbId) {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.reject(new Error('Supabase not configured.'));
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/orders?id=eq.' + encodeURIComponent(dbId), {
+    method: 'DELETE',
+    headers: {
+      'apikey': key,
+      'Authorization': 'Bearer ' + key
+    }
+  }).then(function(r) {
+    if (!r.ok) {
+      return r.text().then(function(t) {
+        var detail = t;
+        try { var p = JSON.parse(t); detail = p.message || p.error_description || p.error || t; } catch (e) {}
+        throw new Error('Delete failed (' + r.status + '): ' + detail);
+      });
+    }
+    return true;
+  });
+}
+
+window.deleteOrder = deleteOrder;

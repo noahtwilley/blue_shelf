@@ -17,7 +17,7 @@ window.State = {
     {id:2,name:'Sourdough Round Loaf - Jalapeno Cheddar',cat:'bread',price:12,emoji:'🥐',photo:photoMap[2],desc:'Buttery, flaky, laminated croissants baked fresh every morning.',stock:12,active:true,customizations:[]},
     {id:3,name:'Sourdough - Croissant',cat:'bread',price:15,emoji:'🍫',photo:photoMap[3],desc:'Enriched dough swirled with dark chocolate and a hint of orange zest.',stock:4,active:true,customizations:[]},
     {id:4,name:'Apple Fritter Loaf',cat:'cake',price:7,emoji:'🍋',photo:photoMap[4],desc:'Silky lemon curd in a buttery shortcrust shell. Perfectly tart.',stock:6,active:true,customizations:[]},
-    {id:5,name:'Sourdough - Chocolate Chip Cookies',cat:'cookies',price:14,emoji:'🌀',photo:photoMap[5],desc:'Pillowy rolls finished with brown butter cream cheese frosting.',stock:0,active:true,customizations:[]},
+    {id:5,name:'Sourdough - Chocolate Chip Cookies',cat:'sweet',price:14,emoji:'🌀',photo:photoMap[5],desc:'Pillowy rolls finished with brown butter cream cheese frosting.',stock:0,active:true,customizations:[]},
      ],
 
   cart: [],

@@ -124,6 +124,31 @@ function toggleReceived(idx) {
   renderOrdersTab();
 }
 
+function deleteOrderRow(idx) {
+  var o = window.State.orders[idx];
+  if (!o) return;
+  if (!confirm('Delete order ' + o.id + ' from ' + o.name + '? This cannot be undone.')) return;
+
+  /* Orders with no DB ID exist only in memory — remove locally */
+  if (!o._dbId) {
+    window.State.orders.splice(idx, 1);
+    showToast('Order removed');
+    renderOrdersTab();
+    return;
+  }
+
+  if (typeof deleteOrder !== 'function') { showToast('Supabase not configured.'); return; }
+
+  deleteOrder(o._dbId).then(function() {
+    window.State.orders.splice(idx, 1);
+    showToast(o.id + ' deleted');
+    renderOrdersTab();
+  }).catch(function(err) {
+    showToast('Could not delete: ' + err.message);
+    /* Order is NOT removed from the UI — the user can try again */
+  });
+}
+
 /* MODIFIED: orders filter setter — 'all', 'pickup', 'delivery' (CHANGE 5) */
 function setOrdersFilter(val) {
   window.State.ordersFilter = val;
@@ -177,9 +202,9 @@ function renderOrdersTab() {
 
   /* MODIFIED: added Fulfillment column + horizontal scroll wrapper for wide table (CHANGE 5) */
   wrap.innerHTML = filterBar + '<div style="overflow-x:auto"><table class="orders-table">' +
-    '<thead><tr><th>Order</th><th>Customer</th><th>Fulfillment</th><th>Items</th><th>Total</th><th>Date</th><th>Payment</th><th>Paid</th><th>Received</th></tr></thead>' +
+    '<thead><tr><th>Order</th><th>Customer</th><th>Fulfillment</th><th>Items</th><th>Total</th><th>Date</th><th>Payment</th><th>Paid</th><th>Received</th><th></th></tr></thead>' +
     '<tbody>' + filteredOrders.map(function(o) {
-      var realIdx = S.orders.indexOf(o); /* use real index for paid/received toggles */
+      var realIdx = S.orders.indexOf(o); /* use real index for paid/received/delete actions */
       var fulfillment = getOrderFulfillment(o);
       var address = getOrderAddress(o);
       var itemsShort = o.items.length > 30 ? o.items.substring(0, 30) + '\u2026' : o.items;
@@ -199,6 +224,7 @@ function renderOrdersTab() {
         '<td style="font-size:0.75rem;color:var(--text-muted)">' + o.payment + '</td>' +
         '<td><span class="order-status ' + (o.paid ? 's-paid' : 's-unpaid') + '" onclick="togglePaid(' + realIdx + ')">' + (o.paid ? 'Paid \u2713' : 'Unpaid') + '</span></td>' +
         '<td><span class="order-status ' + (o.received ? 's-received' : 's-not-received') + '" onclick="toggleReceived(' + realIdx + ')">' + (o.received ? 'Received \u2713' : 'Pending') + '</span></td>' +
+        '<td><button class="delete-btn" onclick="deleteOrderRow(' + realIdx + ')" title="Delete order">\u2715</button></td>' +
       '</tr>';
     }).join('') + '</tbody></table></div>';
 }
