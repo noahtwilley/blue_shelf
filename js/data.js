@@ -1,13 +1,13 @@
 /* === BLUE SHELF MICROBAKERY === FILE: js/data.js === */
 /* Global state: menu items, orders, cart, baking days, wizard state */
 
-/* MODIFIED: Unsplash photo URLs for default products (CHANGE 4) */
+/* Placeholder images in pictures/ — swap in real photos using the same filenames */
 var photoMap = {
-  1: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80', /* sourdough */
-  2: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&q=80',   /* croissants */
-  3: 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?w=400&q=80',/* babka */
-  4: 'https://images.unsplash.com/photo-1519915028121-7d3463d20b13?w=400&q=80',/* lemon tart */
-  5: 'https://images.unsplash.com/photo-1561339429-36e837a8b8e8?w=400&q=80',   /* cinnamon rolls */
+  1: 'pictures/sourdough-round-loaf-classic.jpg',
+  2: 'pictures/sourdough-round-loaf-jalapeno-cheddar.jpg',
+  3: 'pictures/sourdough-croissant.jpg',
+  4: 'pictures/apple-fritter-loaf.jpg',
+  5: 'pictures/sourdough-chocolate-chip-cookies.jpg'
 };
 
 window.State = {

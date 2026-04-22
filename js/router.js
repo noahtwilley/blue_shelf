@@ -30,15 +30,18 @@ function showPage(name) {
 }
 
 function showAdminTab(tabName) {
+  /* Redirect merged tabs to their replacement */
+  if (tabName === 'bakingdays' || tabName === 'availability') tabName = 'schedule';
   document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.admin-sub-tab').forEach(function(t) { t.classList.remove('active'); });
-  document.getElementById('admin-tab-' + tabName).classList.add('active');
+  var tabEl = document.getElementById('admin-tab-' + tabName);
+  if (!tabEl) return;
+  tabEl.classList.add('active');
   /* Find the matching sub-tab button by data attribute */
   var btn = document.querySelector('.admin-sub-tab[data-tab="' + tabName + '"]');
   if (btn) btn.classList.add('active');
-  if (tabName === 'orders')       renderOrdersTab();
-  if (tabName === 'summary')      renderDaySummaryTab();
-  if (tabName === 'products')     renderProductsTab();
-  if (tabName === 'bakingdays')   renderBakingDaysTab();
-  if (tabName === 'availability') renderAvailabilityTab();
+  if (tabName === 'orders')   renderOrdersTab();
+  if (tabName === 'summary')  renderDaySummaryTab();
+  if (tabName === 'products') renderProductsTab();
+  if (tabName === 'schedule') renderScheduleTab();
 }

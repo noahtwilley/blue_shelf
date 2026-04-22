@@ -121,7 +121,7 @@ function upsertAvailability(row) {
   var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
   var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
   if (!url || !key) return Promise.reject(new Error('Supabase not configured.'));
-  return fetch(url.replace(/\/$/, '') + '/rest/v1/daily_availability', {
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/daily_availability?on_conflict=date,item_name', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

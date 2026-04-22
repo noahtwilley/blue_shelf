@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <rect width="400" height="300" fill="#fdf4e3"/>
+  <path d="M130,155 Q145,75 200,80 Q255,75 270,155 Q250,175 200,168 Q150,175 130,155 Z" fill="#d4a87c" opacity="0.9"/>
+  <path d="M130,155 Q145,75 200,80 Q255,75 270,155 Q250,175 200,168 Q150,175 130,155 Z" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="8" stroke-dasharray="18 12"/>
+  <ellipse cx="200" cy="110" rx="38" ry="16" fill="rgba(255,255,255,0.18)"/>
+  <text x="200" y="233" text-anchor="middle" font-family="Georgia,serif" font-size="17" font-weight="bold" fill="#4a2e0a">Sourdough Croissant</text>
+  <text x="200" y="286" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#c0a060">placeholder · photo coming soon</text>
+</svg>

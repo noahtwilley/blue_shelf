@@ -148,6 +148,8 @@
 .calendar-cell:not(.empty):not(.past):hover { border-color: var(--blue); background: var(--blue-xlight); }
 .calendar-cell.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
 .calendar-cell.active:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+/* Today's date gets a blue ring when not selected */
+.calendar-cell.is-today { border-color: var(--blue); color: var(--blue-dark); font-weight: 700; }
 .calendar-cell .dot {
   width: 5px; height: 5px; border-radius: 50%; background: var(--green);
   position: absolute; bottom: 4px;
