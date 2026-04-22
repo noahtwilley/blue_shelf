@@ -36,7 +36,7 @@ window.State = {
     deliveryAddr: null
   },
 
-  deliveryFee: 5.00,
+  deliveryFee: 2.00,
 
   /* Calendar navigation state for admin baking days */
   calendarMonth: new Date().getMonth(),
