@@ -2,7 +2,7 @@
 .env
 .env.*
 !.env.example
-js/env.js
+
 
 # OS/editor noise
 .DS_Store
