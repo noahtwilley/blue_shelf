@@ -13,11 +13,11 @@ var photoMap = {
 window.State = {
   /* MODIFIED: added photo field to each item from photoMap (CHANGE 4) */
   menuItems: [
-    {id:1,name:'Sourdough Round Loaf - Classic',cat:'bread',price:10,emoji:'🍞',photo:photoMap[1],desc:'Long-ferment sourdough with a crackling crust and open, airy crumb.',stock:8,active:true,customizations:[]},
-    {id:2,name:'Sourdough Round Loaf - Jalapeno Cheddar',cat:'bread',price:12,emoji:'🥐',photo:photoMap[2],desc:'Buttery, flaky, laminated croissants baked fresh every morning.',stock:12,active:true,customizations:[]},
-    {id:3,name:'Sourdough - Croissant',cat:'bread',price:15,emoji:'🍫',photo:photoMap[3],desc:'Enriched dough swirled with dark chocolate and a hint of orange zest.',stock:4,active:true,customizations:[]},
-    {id:4,name:'Apple Fritter Loaf',cat:'cake',price:7,emoji:'🍋',photo:photoMap[4],desc:'Silky lemon curd in a buttery shortcrust shell. Perfectly tart.',stock:6,active:true,customizations:[]},
-    {id:5,name:'Sourdough - Chocolate Chip Cookies',cat:'sweet',price:14,emoji:'🌀',photo:photoMap[5],desc:'Pillowy rolls finished with brown butter cream cheese frosting.',stock:0,active:true,customizations:[]},
+    {id:1,name:'Classic Loaf',cat:'bread',price:10,emoji:'🍞',photo:photoMap[1],desc:'Crusty sourdough with a deep golden crackle, a tender airy crumb, and a delicate tang.',stock:8,active:true,customizations:[]},
+    {id:2,name:'Jalapeno Cheddar Loaf',cat:'bread',price:12,emoji:'🥐',photo:photoMap[2],desc:'Crusty sourdough with a crispy golden crust, a soft and airy crumb, and the perfect balance of smoky richness and gentle heat in every bite',stock:12,active:true,customizations:[]},
+    {id:3,name:'Croissant Loaf',cat:'bread',price:15,emoji:'🍫',photo:photoMap[3],desc:'Delicate, buttery flaky layers that peel apart in soft sheets, and a light, airy crumb.',stock:4,active:true,customizations:[]},
+    {id:4,name:'Apple Fritter Loaf',cat:'cake',price:7,emoji:'🍋',photo:photoMap[4],desc:'',stock:6,active:true,customizations:[]},
+    {id:5,name:'Chocolate Chip Cookies',cat:'sweet',price:14,emoji:'🌀',photo:photoMap[5],desc:'',stock:0,active:true,customizations:[]},
      ],
 
   cart: [],
