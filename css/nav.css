@@ -31,6 +31,13 @@ nav {
 .cart-count.bump { transform: scale(1.4); }
 
 @media (max-width: 540px) {
-  .nav-tabs .nav-tab { padding: 0.4rem 0.65rem; font-size: 0.8rem; }
-  nav { padding: 0 4%; }
+  nav { padding: 0 3%; height: 58px; }
+  .page { padding-top: 58px; }
+  .nav-logo { font-size: 1.1rem; }
+  .nav-tabs .nav-tab { padding: 0.4rem 0.6rem; font-size: 0.78rem; }
+  .cart-btn { padding: 0.4rem 0.75rem; font-size: 0.82rem; }
+}
+@media (max-width: 380px) {
+  .nav-tabs .nav-tab { padding: 0.35rem 0.45rem; font-size: 0.74rem; }
+  .cart-btn span { display: none; }
 }

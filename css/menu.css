@@ -19,22 +19,37 @@
 }
 .menu-cta-banner a:hover { opacity: 0.85; }
 
-.menu-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+.menu-filters {
+  display: flex; gap: 0.5rem; flex-wrap: nowrap;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  margin-bottom: 2rem; padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.menu-filters::-webkit-scrollbar { display: none; }
 .filter-btn {
-  padding: 0.4rem 1rem; border-radius: 50px; border: 1.5px solid var(--cream-dark);
+  padding: 0.45rem 1rem; border-radius: 50px; border: 1.5px solid var(--cream-dark);
   background: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
   font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+  white-space: nowrap; flex-shrink: 0; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .filter-btn:hover { border-color: var(--blue); color: var(--blue-dark); }
 .filter-btn.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
 .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 1.5rem; }
+/* Disable card scale on touch devices — hover state gets stuck */
+@media (hover: hover) {
+  .menu-card:hover { transform: scale(1.03); box-shadow: var(--shadow-hover); }
+}
+@media (hover: none) {
+  .menu-card:active { transform: scale(0.98); box-shadow: var(--shadow); }
+}
 .menu-card {
   background: var(--white); border-radius: var(--radius); overflow: hidden;
   box-shadow: var(--shadow); transition: transform 0.3s, box-shadow 0.3s;
   border: 1px solid rgba(107,143,171,0.07);
 }
 /* MODIFIED: hover changed to scale(1.03) for showcase feel (CHANGE 3) */
-.menu-card:hover { transform: scale(1.03); box-shadow: var(--shadow-hover); }
+/* moved to @media (hover: hover) block above */
 .menu-card-img {
   /* MODIFIED: height increased from 150px to 200px (CHANGE 3) */
   height: 200px; display: flex; align-items: center; justify-content: center;
@@ -48,3 +63,17 @@
 .menu-card-footer { display: flex; justify-content: space-between; align-items: center; }
 /* MODIFIED: category tag on each card (CHANGE 3) */
 .menu-cat-tag { cursor: default; }
+
+@media (max-width: 600px) {
+  #page-menu .content { padding: 24px 4% 60px; }
+  .menu-cta-banner { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .menu-cta-banner a { align-self: stretch; text-align: center; }
+  .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
+  .menu-card-img { height: 140px; font-size: 2.8rem; }
+  .menu-card-body { padding: 0.85rem 0.9rem; }
+  .menu-card h3 { font-size: 0.92rem; }
+  .menu-card p { display: none; }
+}
+@media (max-width: 360px) {
+  .menu-grid { grid-template-columns: 1fr; }
+}
