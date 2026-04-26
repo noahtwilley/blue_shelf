@@ -198,6 +198,16 @@ function renderProductsStep() {
   var grid = document.getElementById('wizard-products-grid');
   var date = S.wizardState.date;
 
+  /* === PRODUCTS LOADING GUARD === */
+  if (!S.productsLoaded) {
+    grid.innerHTML = '<p style="color:var(--text-muted);padding:2rem 0;grid-column:1/-1">Loading products…</p>';
+    document.getElementById('floating-subtotal').classList.add('hide');
+    if (typeof loadProducts === 'function') {
+      loadProducts().then(function() { renderProductsStep(); });
+    }
+    return;
+  }
+
   /* === LIVE AVAILABILITY PATH === */
   var dayAvail = S.dailyAvailability && S.dailyAvailability[date];
 

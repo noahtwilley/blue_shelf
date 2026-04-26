@@ -84,8 +84,11 @@ var appReady = false;
       }
     }
     appReady = true;
-    renderMenu();
-    if (typeof initActiveDays === 'function') initActiveDays();
+    var _loadP = typeof loadProducts === 'function' ? loadProducts() : Promise.resolve();
+    _loadP.then(function() {
+      renderMenu();
+      if (typeof initActiveDays === 'function') initActiveDays();
+    });
   }
 })();
 </script>

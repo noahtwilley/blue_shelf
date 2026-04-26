@@ -57,6 +57,9 @@ window.State = {
      undefined = not yet fetched; [] = fetched but no rows (fall back to bakingDays); [...] = live data */
   dailyAvailability: {},
 
+  /* True once loadProducts() has resolved at least once */
+  productsLoaded: false,
+
   /* Specific dates that are active for ordering, keyed by ISO date e.g. "2026-04-24": true.
      Populated by initActiveDays() from the active_days Supabase table. */
   activeDays: {}
@@ -108,5 +111,36 @@ function initActiveDays() {
     reseedBakingDays();
   }).catch(function(err) {
     console.warn('Could not load active days from Supabase:', err.message);
+  });
+}
+
+/**
+ * Load menu items from Supabase and update State.menuItems.
+ * Falls back silently to hardcoded defaults if Supabase is unavailable or returns nothing.
+ */
+function loadProducts() {
+  if (typeof fetchProducts !== 'function') return Promise.resolve();
+  return fetchProducts().then(function(rows) {
+    if (!rows || !rows.length) return;
+    window.State.menuItems = rows.map(function(row) {
+      return {
+        id: row.id,
+        name: row.name,
+        cat: row.cat,
+        price: row.price,
+        emoji: row.emoji,
+        photo: row.photo || '',
+        desc: row.desc || '',
+        stock: row.stock,
+        active: row.active,
+        customizations: Array.isArray(row.customizations) ? row.customizations : []
+      };
+    });
+    window.State.productsLoaded = true;
+    reseedBakingDays();
+  }).catch(function(err) {
+    console.warn('Could not load products from Supabase, using defaults:', err.message || err);
+    /* Mark loaded anyway so the wizard doesn't hang on the loading state */
+    window.State.productsLoaded = true;
   });
 }

@@ -235,3 +235,89 @@ function upsertActiveDay(date, isActive) {
 
 window.fetchActiveDays = fetchActiveDays;
 window.upsertActiveDay = upsertActiveDay;
+
+/**
+ * Fetch all rows from the menu_items table, ordered by id.
+ * Table schema: id, name, cat, price, emoji, photo, desc, stock, active, customizations (jsonb)
+ */
+function fetchProducts() {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.reject(new Error('Supabase not configured.'));
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/menu_items?select=*&order=id.asc', {
+    method: 'GET',
+    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('fetchProducts failed (' + r.status + '): ' + t); });
+    return r.json();
+  });
+}
+
+/**
+ * Save a menu item to Supabase.
+ * If item.id exists → PATCH (update). Otherwise → POST (insert, returns row with new id).
+ */
+function upsertProduct(item) {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.resolve(item);
+  var base = url.replace(/\/$/, '') + '/rest/v1/menu_items';
+  var payload = {
+    name: item.name,
+    cat: item.cat,
+    price: Number(item.price),
+    emoji: item.emoji,
+    photo: item.photo || '',
+    desc: item.desc || '',
+    stock: Number(item.stock) || 0,
+    active: !!item.active,
+    customizations: item.customizations || []
+  };
+  if (item.id) {
+    return fetch(base + '?id=eq.' + item.id, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': key, 'Authorization': 'Bearer ' + key,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(payload)
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error('upsertProduct failed (' + r.status + '): ' + t); });
+      return r.json().then(function(rows) { return rows && rows[0] ? rows[0] : item; });
+    });
+  } else {
+    return fetch(base, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': key, 'Authorization': 'Bearer ' + key,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(payload)
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error('upsertProduct failed (' + r.status + '): ' + t); });
+      return r.json().then(function(rows) { return rows && rows[0] ? rows[0] : item; });
+    });
+  }
+}
+
+/**
+ * Delete a menu item by its database id.
+ */
+function deleteProductDb(id) {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.resolve();
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/menu_items?id=eq.' + encodeURIComponent(id), {
+    method: 'DELETE',
+    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('deleteProduct failed (' + r.status + '): ' + t); });
+    return true;
+  });
+}
+
+window.fetchProducts   = fetchProducts;
+window.upsertProduct   = upsertProduct;
+window.deleteProductDb = deleteProductDb;

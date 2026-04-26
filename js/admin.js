@@ -533,17 +533,29 @@ function renderProductsTab() {
       /* Main info row */
       '<div style="display:flex;gap:1rem;margin-bottom:0.75rem;width:100%;align-items:center">' +
         '<div class="inv-icon">' + thumbHtml + '</div>' +
-        '<div class="inv-info" style="flex:1"><h4>' + item.name + '</h4><span>$' + item.price + ' \u00B7 ' + item.cat + '</span></div>' +
+        '<div class="inv-info" style="flex:1"><h4>' + item.name + '</h4><span>' + item.cat + '</span></div>' +
         '<div class="inv-controls">' +
-          '<input type="number" class="inv-input" value="' + item.stock + '" min="0" onchange="updateStock(' + item.id + ',this.value)" />' +
           '<button class="inv-toggle' + (item.active ? ' on' : '') + '" onclick="toggleItem(' + item.id + ',this)"></button>' +
           '<button class="delete-btn" onclick="deleteProduct(' + item.id + ')" title="Delete product">\u2715</button>' +
         '</div>' +
       '</div>' +
-      /* MODIFIED: Photo URL input row (CHANGE 4) */
+      /* Price + Desc row */
+      '<div style="margin-left:3rem;margin-bottom:0.75rem;display:flex;gap:0.75rem;width:calc(100% - 3rem);flex-wrap:wrap">' +
+        '<div style="display:flex;align-items:center;gap:0.4rem">' +
+          '<label style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Price $</label>' +
+          '<input type="number" min="0" step="0.01" value="' + item.price + '" oninput="updatePrice(' + item.id + ',this.value)" ' +
+            'style="width:70px;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--cream-dark);font-size:0.75rem;outline:none;font-family:\'DM Sans\'" />' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:0.4rem;flex:1;min-width:160px">' +
+          '<label style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Desc</label>' +
+          '<input type="text" value="' + (item.desc || '').replace(/"/g, '&quot;') + '" placeholder="Short description…" oninput="updateDesc(' + item.id + ',this.value)" ' +
+            'style="flex:1;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--cream-dark);font-size:0.75rem;outline:none;font-family:\'DM Sans\'" />' +
+        '</div>' +
+      '</div>' +
+      /* Photo URL row */
       '<div style="margin-left:3rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;width:calc(100% - 3rem)">' +
         '<label style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Photo URL</label>' +
-        '<input type="text" value="' + (item.photo || '') + '" placeholder="https://images.unsplash.com/…" ' +
+        '<input type="text" value="' + (item.photo || '') + '" placeholder="https://…" ' +
           'oninput="updatePhoto(' + item.id + ',this.value)" ' +
           'style="flex:1;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--cream-dark);font-size:0.75rem;outline:none;font-family:\'DM Sans\'" />' +
       '</div>' +
@@ -574,20 +586,48 @@ function renderProductsTab() {
 function updateStock(id, val) {
   var item = window.State.menuItems.find(function(i) { return i.id === id; });
   if (item) item.stock = Math.max(0, parseInt(val) || 0);
+  if (typeof upsertProduct === 'function') upsertProduct(item).catch(function(e) { console.warn('Save failed:', e); });
   showToast(item.emoji + ' ' + item.name + ': stock updated');
+}
+
+var _priceSaveTimer = {};
+function updatePrice(id, val) {
+  var item = window.State.menuItems.find(function(i) { return i.id === id; });
+  if (!item) return;
+  var parsed = parseFloat(val);
+  if (!isNaN(parsed) && parsed >= 0) item.price = parsed;
+  clearTimeout(_priceSaveTimer[id]);
+  _priceSaveTimer[id] = setTimeout(function() {
+    if (typeof upsertProduct === 'function') upsertProduct(item).catch(function(e) { console.warn('Save failed:', e); });
+  }, 800);
+}
+
+var _descSaveTimer = {};
+function updateDesc(id, val) {
+  var item = window.State.menuItems.find(function(i) { return i.id === id; });
+  if (!item) return;
+  item.desc = val;
+  clearTimeout(_descSaveTimer[id]);
+  _descSaveTimer[id] = setTimeout(function() {
+    if (typeof upsertProduct === 'function') upsertProduct(item).catch(function(e) { console.warn('Save failed:', e); });
+  }, 800);
 }
 
 function toggleItem(id, btn) {
   var item = window.State.menuItems.find(function(i) { return i.id === id; });
   if (item) item.active = !item.active;
-  btn.classList.toggle('on');
-  showToast(item.emoji + ' ' + item.name + ' ' + (item.active ? 'listed on shelf \u2713' : 'hidden from shelf'));
+  btn.classList.toggle('on');  if (typeof upsertProduct === 'function') upsertProduct(item).catch(function(e) { console.warn('Save failed:', e); });  showToast(item.emoji + ' ' + item.name + ' ' + (item.active ? 'listed on shelf \u2713' : 'hidden from shelf'));
 }
 
 /* MODIFIED: updatePhoto — sets item.photo in State, re-renders menu on next nav (CHANGE 4) */
+var _photoSaveTimer = {};
 function updatePhoto(id, url) {
   var item = window.State.menuItems.find(function(i) { return i.id === id; });
   if (item) item.photo = url.trim();
+  clearTimeout(_photoSaveTimer[id]);
+  _photoSaveTimer[id] = setTimeout(function() {
+    if (typeof upsertProduct === 'function') upsertProduct(item).catch(function(e) { console.warn('Save failed:', e); });
+  }, 800);
 }
 
 function deleteProduct(id) {
@@ -601,6 +641,7 @@ function deleteProduct(id) {
   });
   window.State.cart = window.State.cart.filter(function(c) { return c.id !== id; });
   updateCartBadge();
+  if (typeof deleteProductDb === 'function') deleteProductDb(id).catch(function(e) { console.warn('Delete failed:', e); });
   showToast(item.emoji + ' ' + item.name + ' deleted');
   renderProductsTab();
   renderMenu();
@@ -622,26 +663,54 @@ function addProduct() {
   var photo = document.getElementById('add-photo').value.trim();
   if (!emoji || !name || !price) { showToast('Fill in emoji, name, and price'); return; }
   var newItem = {
-    id: Math.max.apply(null, window.State.menuItems.map(function(i) { return i.id; }).concat([0])) + 1,
     name: name, cat: cat, price: price, stock: stock, emoji: emoji,
     desc: desc, active: true, customizations: [],
     photo: photo || ''  /* MODIFIED: include photo in new items (CHANGE 4) */
   };
-  window.State.menuItems.push(newItem);
-  ['add-emoji','add-name','add-price','add-stock','add-desc','add-photo'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  toggleAddProductForm();
-  showToast(emoji + ' ' + name + ' added!');
-  renderProductsTab();
-  renderMenu();
+  var resetForm = function() {
+    ['add-emoji','add-name','add-price','add-stock','add-desc','add-photo'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
+    toggleAddProductForm();
+  };
+  if (typeof upsertProduct === 'function') {
+    upsertProduct(newItem).then(function(saved) {
+      newItem.id = saved.id;
+      window.State.menuItems.push(newItem);
+      resetForm();
+      showToast(emoji + ' ' + name + ' added!');
+      renderProductsTab();
+      renderMenu();
+    }).catch(function(e) {
+      console.warn('Save failed:', e);
+      showToast('Could not save to Supabase. Check the menu_items table exists.');
+    });
+  } else {
+    newItem.id = Math.max.apply(null, window.State.menuItems.map(function(i) { return i.id; }).concat([0])) + 1;
+    window.State.menuItems.push(newItem);
+    resetForm();
+    showToast(emoji + ' ' + name + ' added!');
+    renderProductsTab();
+    renderMenu();
+  }
+}
+
+/* Debounced save for customization field edits */
+var _custSaveTimer = {};
+function _saveProductDebounced(itemId) {
+  var item = window.State.menuItems.find(function(i) { return i.id === itemId; });
+  if (!item || typeof upsertProduct !== 'function') return;
+  clearTimeout(_custSaveTimer[itemId]);
+  _custSaveTimer[itemId] = setTimeout(function() {
+    upsertProduct(item).catch(function(e) { console.warn('Save failed:', e); });
+  }, 800);
 }
 
 function addCustomization(itemId) {
   var item = window.State.menuItems.find(function(i) { return i.id === itemId; });
   if (!item.customizations) item.customizations = [];
   item.customizations.push({label: '', type: 'text', options: [], required: false});
+  _saveProductDebounced(itemId);
   renderProductsTab();
 }
 
@@ -649,6 +718,7 @@ function deleteCustomization(itemId, custIdx) {
   var item = window.State.menuItems.find(function(i) { return i.id === itemId; });
   if (item.customizations && item.customizations[custIdx]) {
     item.customizations.splice(custIdx, 1);
+    _saveProductDebounced(itemId);
     renderProductsTab();
   }
 }
@@ -663,6 +733,7 @@ function updateCustomization(itemId, custIdx, field, value) {
   } else {
     item.customizations[custIdx][field] = value;
   }
+  _saveProductDebounced(itemId);
 }
 
 

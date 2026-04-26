@@ -16,6 +16,8 @@ function showPage(name) {
     document.getElementById('order-success').classList.remove('show');
     document.getElementById('floating-subtotal').classList.add('hide');
     goToStep(1);
+    /* Refresh products from Supabase so latest prices/items are shown */
+    if (typeof loadProducts === 'function') loadProducts().then(function() { if (typeof reseedBakingDays === 'function') reseedBakingDays(); });
     /* Fetch today's availability for the hero badge, then start polling */
     if (typeof refreshAvailability === 'function') {
       refreshAvailability(toLocalISO(new Date())).then(function() { updateAvailabilityBadge(); });
@@ -49,6 +51,8 @@ function resumeOrder() {
     document.getElementById('floating-subtotal').classList.add('hide');
     goToStep(1);
   }
+  /* Refresh products from Supabase so latest prices/items are shown */
+  if (typeof loadProducts === 'function') loadProducts().then(function() { if (typeof reseedBakingDays === 'function') reseedBakingDays(); });
   if (typeof refreshAvailability === 'function') {
     refreshAvailability(toLocalISO(new Date())).then(function() { updateAvailabilityBadge(); });
   }
