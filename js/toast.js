@@ -11,8 +11,9 @@ function showToast(msg) {
 }
 
 function updateCartBadge() {
-  var total = window.State.cart.reduce(function(s, c) { return s + c.qty; }, 0);
   var el = document.getElementById('cart-count');
+  if (!el) return;
+  var total = window.State.cart.reduce(function(s, c) { return s + c.qty; }, 0);
   el.textContent = total;
   el.classList.add('bump');
   setTimeout(function() { el.classList.remove('bump'); }, 350);

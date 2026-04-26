@@ -9,7 +9,7 @@ nav {
 }
 .nav-logo { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; color: var(--navy); text-decoration: none; letter-spacing: -0.02em; cursor: pointer; }
 .nav-logo span { color: var(--blue); }
-.nav-tabs { display: flex; gap: 0.25rem; }
+.nav-tabs { display: flex; gap: 0.25rem; position: absolute; left: 50%; transform: translateX(-50%); }
 .nav-tab {
   padding: 0.45rem 1.1rem; border-radius: 50px; border: none; background: none;
   font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
@@ -35,7 +35,6 @@ nav {
   .page { padding-top: 58px; }
   .nav-logo { font-size: 1.1rem; }
   .nav-tabs .nav-tab { padding: 0.4rem 0.6rem; font-size: 0.78rem; }
-  .cart-btn { padding: 0.4rem 0.75rem; font-size: 0.82rem; }
 }
 @media (max-width: 380px) {
   .nav-tabs .nav-tab { padding: 0.35rem 0.45rem; font-size: 0.74rem; }
