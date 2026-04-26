@@ -170,7 +170,7 @@
   .option-card { padding: 1.5rem; }
   .floating-subtotal { padding: 0.75rem 4%; }
   .date-picker-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.65rem; }
-  .wizard-buttons { flex-direction: column; }
+  .wizard-buttons { flex-direction: column-reverse; }
   .wizard-btn-prev, .wizard-btn-next, .wizard-btn-next[style] { width: 100%; text-align: center; flex: unset !important; }
   .checkout-form { max-width: 100%; }
 }
