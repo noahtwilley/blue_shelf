@@ -105,9 +105,9 @@
           <h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--navy);margin-bottom:1.5rem">Confirm your order</h2>
           <div class="checkout-summary" id="checkout-summary"></div>
           <div class="checkout-form">
-            <div class="form-group"><label>Full Name</label><input type="text" id="f-name" placeholder="Jane Smith" /></div>
-            <div class="form-group"><label>Email</label><input type="email" id="f-email" placeholder="jane@email.com" /></div>
-            <div class="form-group"><label>Phone</label><input type="tel" id="f-phone" placeholder="(416) 555-0100" /></div>
+            <div class="form-group"><label for="f-name">Full Name</label><input type="text" id="f-name" name="name" autocomplete="name" placeholder="Jane Smith" /></div>
+            <div class="form-group"><label for="f-email">Email</label><input type="email" id="f-email" name="email" autocomplete="email" placeholder="jane@email.com" /></div>
+            <div class="form-group"><label for="f-phone">Phone</label><input type="tel" id="f-phone" name="tel" autocomplete="tel" placeholder="(416) 555-0100" /></div>
             <div class="form-group">
               <label>Payment</label>
               <div class="payment-options">
