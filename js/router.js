@@ -29,6 +29,33 @@ function showPage(name) {
   window.scrollTo(0, 0);
 }
 
+/* Resume the order page without resetting — used by the cart button */
+function resumeOrder() {
+  if (typeof appReady !== 'undefined' && !appReady) return;
+  if (typeof stopAvailabilityPolling === 'function') stopAvailabilityPolling();
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.getElementById('page-order').classList.add('active');
+  document.getElementById('tab-order').classList.add('active');
+  document.getElementById('wizard-wrap').style.display = 'block';
+  document.getElementById('order-success').classList.remove('show');
+  var S = window.State;
+  var hasProgress = S.wizardState.date !== null || S.cart.length > 0;
+  if (hasProgress) {
+    /* Resume at the furthest valid step */
+    goToStep(S.wizardState.step || 1);
+  } else {
+    resetWizard();
+    document.getElementById('floating-subtotal').classList.add('hide');
+    goToStep(1);
+  }
+  if (typeof refreshAvailability === 'function') {
+    refreshAvailability(toLocalISO(new Date())).then(function() { updateAvailabilityBadge(); });
+  }
+  if (typeof startAvailabilityPolling === 'function') startAvailabilityPolling();
+  window.scrollTo(0, 0);
+}
+
 function showAdminTab(tabName) {
   /* Redirect merged tabs to their replacement */
   if (tabName === 'bakingdays' || tabName === 'availability') tabName = 'schedule';
