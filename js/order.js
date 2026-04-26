@@ -516,12 +516,16 @@ function submitWizardOrder() {
     };
 
     S.orders.push(order);
-    sendOrderEmail(order);
 
     S.cart = [];
     updateCartBadge();
 
-    window.location.href = buildOrderConfirmationUrl(name, total, email);
+    var confirmUrl = buildOrderConfirmationUrl(name, total, email);
+    sendOrderEmail(order).then(function() {
+      window.location.href = confirmUrl;
+    }, function() {
+      window.location.href = confirmUrl;
+    });
   }).catch(function(err) {
     console.warn('Supabase save failed:', err);
     showToast('We could not place your order right now. Please try again.');

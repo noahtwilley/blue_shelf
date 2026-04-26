@@ -58,10 +58,10 @@ if (EMAILJS_CONFIGURED) {
 function sendOrderEmail(order) { /* MODIFIED: EmailJS send with silent error handling (CHANGE 1) */
   if (!EMAILJS_CONFIGURED) {
     showToast('Order placed! (Email service not configured)');
-    return;
+    return Promise.resolve();
   }
 
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+  return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
     email:         order.email || 'N/A',
     order_id:         order.id || 'N/A',
     customer_name:    order.name || 'N/A',
