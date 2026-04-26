@@ -236,7 +236,7 @@ function renderProductsStep() {
       return {
         id:             mi.id || null,
         name:           row.item_name,
-        price:          row.item_price,
+        price:          mi.price != null ? mi.price : row.item_price,
         emoji:          row.item_emoji || mi.emoji || '🧁',
         photo:          mi.photo || '',
         cat:            mi.cat   || 'bread',
