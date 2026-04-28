@@ -25,6 +25,8 @@
       <div class="admin-sub-nav">
         <button class="admin-sub-tab active" data-tab="orders" onclick="showAdminTab('orders')">📋 Orders</button>
         <button class="admin-sub-tab" data-tab="summary" onclick="showAdminTab('summary')">📅 Day Summary</button>
+        <!-- ADDED (Task 4): Budget tab -->
+        <button class="admin-sub-tab" data-tab="budget" onclick="showAdminTab('budget')">💰 Budget</button>
         <button class="admin-sub-tab" data-tab="products" onclick="showAdminTab('products')">🧁 Products</button>
         <!-- Merged: Baking Days + Availability → Schedule -->
         <button class="admin-sub-tab" data-tab="schedule" onclick="showAdminTab('schedule')">📆 Schedule</button>
@@ -80,6 +82,13 @@
             <span>Baking Schedule</span>
           </div>
           <div id="sched-content"></div>
+        </div>
+      </div>
+      <!-- ADDED (Task 4): Budget tab pane -->
+      <div class="admin-tab" id="admin-tab-budget">
+        <div class="admin-card">
+          <div class="admin-card-title">💰 Budget</div>
+          <div id="budget-content"></div>
         </div>
       </div>
     </div>

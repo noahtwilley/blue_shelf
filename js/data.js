@@ -53,6 +53,15 @@ window.State = {
   /* MODIFIED: orders filter state for Pickup/Delivery segmented control (CHANGE 5) */
   ordersFilter: 'all',             /* 'all', 'pickup', or 'delivery' */
 
+  /* ADDED: budget tab period filter — 'month', 'ytd', or 'all' */
+  budgetPeriodFilter: 'month',
+
+  /* ADDED: supply expense records loaded from Supabase supply_expenses table */
+  supplyExpenses: [],
+
+  /* ADDED: month filter for Day Summary tab — 'all' or 'YYYY-MM' */
+  summaryMonthFilter: 'all',
+
   /* Daily availability from Supabase: keyed by ISO date, value is array of availability rows.
      undefined = not yet fetched; [] = fetched but no rows (fall back to bakingDays); [...] = live data */
   dailyAvailability: {},

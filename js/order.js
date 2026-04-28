@@ -410,6 +410,8 @@ function renderCheckoutStep() {
 
   /* MODIFIED: renamed to avoid confusion — "Pickup" or delivery address (CHANGE 5) */
   var modeLabel = S.wizardState.mode === 'pickup' ? 'Pickup' : S.wizardState.deliveryAddr;
+  /* ADDED (Task 5): read phone from form so it shows in the order summary */
+  var phoneVal = (document.getElementById('f-phone') || {}).value || '';
 
   var summary = document.getElementById('checkout-summary');
   summary.innerHTML =
@@ -421,6 +423,11 @@ function renderCheckoutStep() {
       '<div class="summary-label">' + (S.wizardState.mode === 'pickup' ? 'Method' : 'Delivery Address') + '</div>' +
       '<div class="summary-value">' + modeLabel + '</div>' +
     '</div>' +
+    /* ADDED (Task 5): phone number in order summary so customer can verify it */
+    (phoneVal ? '<div class="summary-item">' +
+      '<div class="summary-label">Phone</div>' +
+      '<div class="summary-value">' + phoneVal + '</div>' +
+    '</div>' : '') +
     '<div class="summary-item">' +
       '<div class="summary-label">Order Items</div>' +
       '<ul class="summary-items-list">' +
@@ -474,6 +481,8 @@ function submitWizardOrder() {
     };
   });
 
+  /* MODIFIED (Task 1 + 3): added fulfillment, delivery_address, and payment to the Supabase
+     payload so those fields persist and are returned on the next admin load */
   var orderPayload = {
     name: name,
     email: email,
@@ -481,6 +490,11 @@ function submitWizardOrder() {
     items: dbItems,
     quantity: S.cart.reduce(function(sum, c) { return sum + c.qty; }, 0),
     pickup_date: S.wizardState.date,
+    fulfillment:      S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery',
+    delivery_address: S.wizardState.deliveryAddr || null,
+    payment:  payment,
+    paid:     false,
+    received: false,
     notes: notes,
     total: Number(total.toFixed(2))
   };
@@ -501,10 +515,28 @@ function submitWizardOrder() {
       if (item) item.stock = Math.max(0, item.stock - c.qty);
     });
 
+    /* FIX (Bug 2): the place_order RPC only knows about the original columns and silently
+       drops payment, fulfillment, delivery_address, paid, received.  Follow-up PATCH so
+       all fields are always written regardless of which path was used. */
+    if (savedOrder.id && typeof patchOrderFields === 'function') {
+      patchOrderFields(savedOrder.id, {
+        payment:          payment,
+        fulfillment:      S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery',
+        delivery_address: S.wizardState.deliveryAddr || null,
+        paid:             false,
+        received:         false
+      }).catch(function(err) {
+        console.warn('Follow-up order PATCH failed:', err.message);
+      });
+    }
+
     var fulfillment = S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery';
     var modeLabel = fulfillment === 'Pickup' ? 'Pickup' : 'Delivery - ' + S.wizardState.deliveryAddr;
     var order = {
-      id:           savedOrder.id || ('BSM-' + String(S.orders.length + 1).padStart(3, '0')),
+      /* MODIFIED (Task 6): first 8 chars of the Supabase ID — works for both UUID and integer PKs */
+      id:           savedOrder.id ? '#' + String(savedOrder.id).substring(0, 8).toUpperCase() : '#' + String(S.orders.length + 1).padStart(8, '0'),
+      /* FIX (Bug 1): store the raw DB id so togglePaid/toggleReceived can PATCH this order */
+      _dbId:        savedOrder.id || null,
       name:         name,
       email:        email,
       phone:        phone,

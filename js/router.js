@@ -75,4 +75,9 @@ function showAdminTab(tabName) {
   if (tabName === 'summary')  renderDaySummaryTab();
   if (tabName === 'products') renderProductsTab();
   if (tabName === 'schedule') renderScheduleTab();
+  /* ADDED (Task 4): render budget tab when selected, and load supply expenses from Supabase */
+  if (tabName === 'budget') {
+    renderBudgetTab();
+    loadSupplyExpenses();
+  }
 }

@@ -15,16 +15,21 @@ function getOrderAddress(o) {
 
 /* Convert a raw Supabase orders row into the shape State.orders expects. */
 function normalizeDbOrder(row) {
-  /* items in DB is JSONB [{name, price}]; convert to a readable string for renderers */
+  /* MODIFIED: items in DB is JSONB [{name, price, qty}]; include qty in display string
+     so renderItemsView regex can extract the correct quantity (Task 2 quantity bug fix) */
   var itemStr = '';
   if (Array.isArray(row.items)) {
-    itemStr = row.items.map(function(it) { return it.name || 'Item'; }).join(', ');
+    itemStr = row.items.map(function(it) {
+      var qty = it.qty || 1;
+      return (it.name || 'Item') + ' \u00D7' + qty;
+    }).join(', ');
   } else if (typeof row.items === 'string') {
     itemStr = row.items;
   }
   var fulfillment = row.fulfillment || 'Pickup';
   return {
-    id:           'BSM-' + String(row.id).padStart(3, '0'),
+    /* MODIFIED (Task 6): first 8 chars of Supabase ID — matches order.js submitWizardOrder format */
+    id:           '#' + String(row.id).substring(0, 8).toUpperCase(),
     _dbId:        row.id,          /* keep DB id to preserve paid/received across refreshes */
     name:         row.name         || '',
     email:        row.email        || '',
@@ -109,19 +114,72 @@ function loadOrdersFromSupabase() {
   });
 }
 
-/* ─── ORDERS TAB (CHANGE 5: filter bar + fulfillment column) ── */
-function togglePaid(idx) {
-  var o = window.State.orders[idx];
-  o.paid = !o.paid;
-  showToast(o.id + (o.paid ? ' marked paid' : ' marked unpaid'));
+/* ─── ORDERS TAB ────────────────────────────────────────────── */
+
+/* REWRITTEN: togglePaid / toggleReceived no longer use array indices.
+   They take the raw Supabase row id, find the order by that id, do an
+   optimistic in-memory update + immediate re-render, then fire a PATCH.
+   If the PATCH fails the state is reverted and the exact server error is shown. */
+
+function _patchOrderBool(dbId, field, newVal, labelOn, labelOff) {
+  /* Find the order object by its DB id — safe regardless of filter/sort state */
+  var o = window.State.orders.find(function(x) { return String(x._dbId) === String(dbId); });
+  if (!o) { showToast('Order not found in local state'); return; }
+
+  /* Optimistic update */
+  o[field] = newVal;
   renderOrdersTab();
+
+  if (!dbId || dbId === 'null') {
+    showToast('No database ID — status saved locally only (refresh page to persist)');
+    return;
+  }
+
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) { showToast('Supabase not configured — status saved locally only'); return; }
+
+  var body = {};
+  body[field] = newVal;
+
+  fetch(url.replace(/\/$/, '') + '/rest/v1/orders?id=eq.' + encodeURIComponent(dbId), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': key,
+      'Authorization': 'Bearer ' + key
+    },
+    body: JSON.stringify(body)
+  }).then(function(r) {
+    if (!r.ok) {
+      return r.text().then(function(t) {
+        var msg = t;
+        try { var p = JSON.parse(t); msg = p.message || p.hint || p.error || t; } catch (e) {}
+        /* Revert on failure */
+        o[field] = !newVal;
+        renderOrdersTab();
+        showToast('Save failed (' + r.status + '): ' + msg);
+      });
+    }
+    showToast(o.id + ' — ' + (newVal ? labelOn : labelOff));
+  }).catch(function(err) {
+    /* Revert on network error */
+    o[field] = !newVal;
+    renderOrdersTab();
+    showToast('Save failed: ' + err.message);
+  });
 }
 
-function toggleReceived(idx) {
-  var o = window.State.orders[idx];
-  o.received = !o.received;
-  showToast(o.id + (o.received ? ' marked received' : ' marked not received'));
-  renderOrdersTab();
+function togglePaid(dbId) {
+  var o = window.State.orders.find(function(x) { return String(x._dbId) === String(dbId); });
+  if (!o) return;
+  _patchOrderBool(dbId, 'paid', !o.paid, 'marked paid ✓', 'marked unpaid');
+}
+
+function toggleReceived(dbId) {
+  var o = window.State.orders.find(function(x) { return String(x._dbId) === String(dbId); });
+  if (!o) return;
+  _patchOrderBool(dbId, 'received', !o.received, 'marked received ✓', 'marked not received');
 }
 
 function deleteOrderRow(idx) {
@@ -153,6 +211,12 @@ function deleteOrderRow(idx) {
 function setOrdersFilter(val) {
   window.State.ordersFilter = val;
   renderOrdersTab();
+}
+
+/* ADDED: month filter setter for Day Summary tab */
+function setSummaryMonthFilter(val) {
+  window.State.summaryMonthFilter = val;
+  renderDaySummaryTab();
 }
 
 function renderOrdersTab() {
@@ -201,8 +265,9 @@ function renderOrdersTab() {
   }
 
   /* MODIFIED: added Fulfillment column + horizontal scroll wrapper for wide table (CHANGE 5) */
+  /* MODIFIED (Task 5): added Phone column to orders table */
   wrap.innerHTML = filterBar + '<div style="overflow-x:auto"><table class="orders-table">' +
-    '<thead><tr><th>Order</th><th>Customer</th><th>Fulfillment</th><th>Items</th><th>Total</th><th>Date</th><th>Payment</th><th>Paid</th><th>Received</th><th></th></tr></thead>' +
+    '<thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>Fulfillment</th><th>Items</th><th>Total</th><th>Date</th><th>Payment</th><th>Paid</th><th>Received</th><th></th></tr></thead>' +
     '<tbody>' + filteredOrders.map(function(o) {
       var realIdx = S.orders.indexOf(o); /* use real index for paid/received/delete actions */
       var fulfillment = getOrderFulfillment(o);
@@ -217,13 +282,23 @@ function renderOrdersTab() {
       return '<tr>' +
         '<td><strong style="font-size:0.82rem">' + o.id + '</strong></td>' +
         '<td><span style="font-weight:600">' + o.name + '</span></td>' +
+        /* ADDED (Task 5): phone number column */
+        '<td><span style="font-size:0.78rem;color:var(--text-muted)">' + (o.phone || '\u2014') + '</span></td>' +
         '<td>' + fulfillmentCell + '</td>' +
-        '<td><span style="font-size:0.75rem;color:var(--text-muted)">' + itemsShort + '</span></td>' +
+        '<td>' +
+          /* ADDED (Task 7): clicking items cell opens the item-quantity pop-up */
+          '<span style="font-size:0.75rem;color:var(--text-muted);cursor:pointer;text-decoration:underline dotted" ' +
+            'title="Click to see item details" onclick="showOrderItemsModal(' + realIdx + ')">' + itemsShort + ' \uD83D\uDCC4</span>' +
+        '</td>' +
         '<td><strong>$' + o.total + '</strong></td>' +
         '<td style="font-size:0.82rem">' + o.date + '</td>' +
         '<td style="font-size:0.75rem;color:var(--text-muted)">' + o.payment + '</td>' +
-        '<td><span class="order-status ' + (o.paid ? 's-paid' : 's-unpaid') + '" onclick="togglePaid(' + realIdx + ')">' + (o.paid ? 'Paid \u2713' : 'Unpaid') + '</span></td>' +
-        '<td><span class="order-status ' + (o.received ? 's-received' : 's-not-received') + '" onclick="toggleReceived(' + realIdx + ')">' + (o.received ? 'Received \u2713' : 'Pending') + '</span></td>' +
+        /* Pass the raw DB id (quoted) so togglePaid/toggleReceived can find the order
+           regardless of filter state — replaces the old mutable array-index approach */
+        '<td><span class="order-status ' + (o.paid ? 's-paid' : 's-unpaid') + '" onclick="togglePaid(\'' + o._dbId + '\')">'
+          + (o.paid ? 'Paid \u2713' : 'Unpaid') + '</span></td>' +
+        '<td><span class="order-status ' + (o.received ? 's-received' : 's-not-received') + '" onclick="toggleReceived(\'' + o._dbId + '\')">'
+          + (o.received ? 'Received \u2713' : 'Pending') + '</span></td>' +
         '<td><button class="delete-btn" onclick="deleteOrderRow(' + realIdx + ')" title="Delete order">\u2715</button></td>' +
       '</tr>';
     }).join('') + '</tbody></table></div>';
@@ -245,6 +320,8 @@ function setSummaryProductFilter(val) {
 function clearSummaryFilters() {
   window.State.summaryDayFilter = 'all';
   window.State.summaryProductFilter = 'all';
+  /* ADDED: also reset month filter */
+  window.State.summaryMonthFilter = 'all';
   renderDaySummaryTab();
 }
 
@@ -273,12 +350,16 @@ function scrollToDeliveryDay(date) {
 }
 
 /* MODIFIED: render fulfillment view — two-column Pickups | Deliveries (CHANGE 2) */
+/* MODIFIED (Task 1 + Task 5): shows phone number alongside name so baker can contact customer */
 function renderFulfillmentView(pickupOrders, deliveryOrders) {
   function orderRow(o) {
     var address = getOrderAddress(o);
     return '<div style="padding:0.75rem;border-bottom:1px solid var(--cream-dark);font-size:0.83rem">' +
-      '<div style="font-weight:600;color:var(--navy);margin-bottom:0.2rem">' + o.name + '</div>' +
+      '<div style="font-weight:600;color:var(--navy);margin-bottom:0.15rem">' + o.name + '</div>' +
+      /* ADDED (Task 5): phone number so baker can call/text the customer */
+      (o.phone ? '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.2rem">\uD83D\uDCDE ' + o.phone + '</div>' : '') +
       '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.3rem;line-height:1.5">' + o.items + '</div>' +
+      /* ADDED (Task 1): delivery address highlighted for delivery orders */
       (address ? '<div style="font-size:0.72rem;color:var(--blue-dark);margin-bottom:0.3rem">\uD83D\uDCCD ' + address + '</div>' : '') +
       '<div style="display:flex;gap:0.3rem;align-items:center;flex-wrap:wrap">' +
         '<strong style="font-size:0.82rem;color:var(--navy)">$' + o.total + '</strong>' +
@@ -447,6 +528,21 @@ function renderDaySummaryTab() {
   allDates.sort();
   allProductNames.sort();
 
+  /* ADDED: collect unique YYYY-MM months from orders for the month filter */
+  var allMonths = [];
+  S.orders.forEach(function(o) {
+    if (o.date && o.date.length >= 7) {
+      var ym = o.date.substring(0, 7);
+      if (allMonths.indexOf(ym) === -1) allMonths.push(ym);
+    }
+  });
+  allMonths.sort();
+
+  /* Apply month pre-filter first so day/product dropdowns only show options within that month */
+  var monthFiltered = S.summaryMonthFilter === 'all'
+    ? S.orders
+    : S.orders.filter(function(o) { return o.date && o.date.substring(0, 7) === S.summaryMonthFilter; });
+
   /* Dates that have at least one delivery */
   var deliveryDates = allDates.filter(function(d) {
     return S.orders.some(function(o) { return o.date === d && getOrderFulfillment(o) !== 'Pickup'; });
@@ -467,14 +563,28 @@ function renderDaySummaryTab() {
 
   var inputStyle = 'width:100%;padding:0.55rem 0.8rem;border-radius:10px;border:1.5px solid var(--cream-dark);background:var(--cream);font-family:\'DM Sans\',sans-serif;font-size:0.85rem;outline:none';
 
+  /* ADDED: "Filter by Month" dropdown — drives revenue-per-month view */
+  var monthOpts = '<option value="all"' + (S.summaryMonthFilter === 'all' ? ' selected' : '') + '>All Months</option>' +
+    allMonths.map(function(ym) {
+      var parts = ym.split('-');
+      var label = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1)
+        .toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+      return '<option value="' + ym + '"' + (S.summaryMonthFilter === ym ? ' selected' : '') + '>' + label + '</option>';
+    }).join('');
+
   /* MODIFIED: header row with two dropdowns + Clear Filters button (CHANGE 2) */
+  /* MODIFIED: added Month filter dropdown */
   var headerHtml =
     '<div style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:1.5rem;padding:1.25rem;background:var(--cream);border-radius:var(--radius);border:1px solid var(--cream-dark)">' +
-      '<div class="form-group" style="margin:0;flex:1;min-width:150px">' +
+      '<div class="form-group" style="margin:0;flex:1;min-width:130px">' +
+        '<label>Month</label>' +
+        '<select onchange="setSummaryMonthFilter(this.value)" style="' + inputStyle + '">' + monthOpts + '</select>' +
+      '</div>' +
+      '<div class="form-group" style="margin:0;flex:1;min-width:130px">' +
         '<label>Filter by Day</label>' +
         '<select onchange="setSummaryDayFilter(this.value)" style="' + inputStyle + '">' + dayOpts + '</select>' +
       '</div>' +
-      '<div class="form-group" style="margin:0;flex:1;min-width:150px">' +
+      '<div class="form-group" style="margin:0;flex:1;min-width:130px">' +
         '<label>Filter by Product</label>' +
         '<select onchange="setSummaryProductFilter(this.value)" style="' + inputStyle + '">' + prodOpts + '</select>' +
       '</div>' +
@@ -496,12 +606,37 @@ function renderDaySummaryTab() {
       '</div>';
   }
 
-  /* Apply both filters */
-  var filtered = S.orders.filter(function(o) {
+  /* Apply day + product filters on top of the already month-filtered set */
+  var filtered = monthFiltered.filter(function(o) {
     var dayMatch  = S.summaryDayFilter === 'all' || o.date === S.summaryDayFilter;
     var prodMatch = S.summaryProductFilter === 'all' || o.items.indexOf(S.summaryProductFilter) !== -1;
     return dayMatch && prodMatch;
   });
+
+  /* ADDED: show a revenue summary strip when a month is selected */
+  var monthSummaryHtml = '';
+  if (S.summaryMonthFilter !== 'all' && monthFiltered.length) {
+    var mRevenue = monthFiltered.reduce(function(s, o) { return s + parseFloat(o.total || 0); }, 0);
+    var mPaid    = monthFiltered.filter(function(o) { return o.paid; }).reduce(function(s, o) { return s + parseFloat(o.total || 0); }, 0);
+    var mUnpaid  = mRevenue - mPaid;
+    var parts    = S.summaryMonthFilter.split('-');
+    var mLabel   = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1)
+      .toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+    monthSummaryHtml =
+      '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.25rem;' +
+        'padding:1rem 1.25rem;background:var(--blue-xlight);border-radius:var(--radius);' +
+        'border:1px solid var(--blue-light);font-size:0.85rem;align-items:center">' +
+        '<span style="font-weight:600;color:var(--navy)">' + mLabel + '</span>' +
+        '<span style="color:var(--text-muted)">\u00B7</span>' +
+        '<span style="color:var(--text-muted)">' + monthFiltered.length + ' orders</span>' +
+        '<span style="color:var(--text-muted)">\u00B7</span>' +
+        '<span style="color:var(--text-muted)">Total <strong style="color:var(--navy)">$' + mRevenue.toFixed(2) + '</strong></span>' +
+        '<span style="color:var(--text-muted)">\u00B7</span>' +
+        '<span style="color:#3a7a4a">Paid <strong>$' + mPaid.toFixed(2) + '</strong></span>' +
+        '<span style="color:var(--text-muted)">\u00B7</span>' +
+        '<span style="color:#a03030">Unpaid <strong>$' + mUnpaid.toFixed(2) + '</strong></span>' +
+      '</div>';
+  }
 
   /* Group by date */
   var grouped = {};
@@ -516,7 +651,286 @@ function renderDaySummaryTab() {
     ? sortedDates.map(function(d) { return renderDaySummaryCard(d, grouped[d]); }).join('')
     : '<p style="color:var(--text-muted);text-align:center;padding:2rem 0;font-size:0.88rem">No orders match the current filters.</p>';
 
-  wrap.innerHTML = headerHtml + deliveriesHtml + cardsHtml;
+  wrap.innerHTML = headerHtml + monthSummaryHtml + deliveriesHtml + cardsHtml;
+}
+
+/* ─── BUDGET TAB ──────────────────────────────────────────────── */
+
+/* ADDED: period filter setter — 'month', 'ytd', or 'all' */
+function setBudgetPeriod(val) {
+  window.State.budgetPeriodFilter = val;
+  renderBudgetTab();
+}
+
+/* ADDED: load supply expenses from Supabase into State then re-render */
+function loadSupplyExpenses() {
+  if (typeof fetchSupplyExpenses !== 'function') return;
+  fetchSupplyExpenses().then(function(rows) {
+    window.State.supplyExpenses = (rows || []).map(function(r) {
+      return { id: r.id, date: r.date || '', amount: parseFloat(r.amount || 0), notes: r.notes || '' };
+    });
+    renderBudgetTab();
+  }).catch(function(err) {
+    showToast('Could not load expenses: ' + err.message);
+  });
+}
+
+/* ADDED: save a new supply expense from the inline form */
+function addSupplyExpense() {
+  var dateEl   = document.getElementById('supply-date');
+  var amtEl    = document.getElementById('supply-amount');
+  var notesEl  = document.getElementById('supply-notes');
+  if (!dateEl || !amtEl) return;
+  var date   = dateEl.value.trim();
+  var amount = parseFloat(amtEl.value);
+  var notes  = notesEl ? notesEl.value.trim() : '';
+  if (!date || isNaN(amount) || amount <= 0) { showToast('Enter a valid date and amount'); return; }
+
+  var row = { date: date, amount: amount, notes: notes };
+
+  if (typeof saveSupplyExpense !== 'function') {
+    /* Offline fallback — store locally only */
+    row.id = Date.now();
+    window.State.supplyExpenses.unshift(row);
+    dateEl.value = ''; amtEl.value = ''; if (notesEl) notesEl.value = '';
+    renderBudgetTab();
+    return;
+  }
+
+  var btn = document.getElementById('supply-save-btn');
+  if (btn) btn.disabled = true;
+  saveSupplyExpense(row).then(function(saved) {
+    window.State.supplyExpenses.unshift({ id: saved.id, date: saved.date, amount: parseFloat(saved.amount), notes: saved.notes || '' });
+    dateEl.value = ''; amtEl.value = ''; if (notesEl) notesEl.value = '';
+    showToast('Expense saved');
+    renderBudgetTab();
+  }).catch(function(err) {
+    showToast('Could not save: ' + err.message);
+    if (btn) btn.disabled = false;
+  });
+}
+
+/* ADDED: delete a supply expense row */
+function deleteSupplyExpenseRow(id) {
+  if (!confirm('Delete this expense? This cannot be undone.')) return;
+  window.State.supplyExpenses = window.State.supplyExpenses.filter(function(e) { return e.id !== id; });
+  renderBudgetTab();
+  if (typeof deleteSupplyExpense === 'function') {
+    deleteSupplyExpense(id).catch(function(err) { showToast('Delete failed: ' + err.message); });
+  }
+}
+
+/* ADDED: pure-SVG donut chart — no external libraries */
+function buildDonutChart(segments, size) {
+  var total = segments.reduce(function(s, seg) { return s + seg.value; }, 0);
+  if (total <= 0) return '<div style="text-align:center;color:var(--text-muted);font-size:0.85rem;padding:2rem 0">No data yet.</div>';
+  var cx = size / 2, cy = size / 2;
+  var r = size * 0.38, innerR = size * 0.22;
+  var paths = '';
+  var startAngle = -Math.PI / 2;
+  segments.forEach(function(seg) {
+    if (seg.value <= 0) return;
+    var angle = (seg.value / total) * 2 * Math.PI;
+    /* Tiny gap between slices */
+    var gap = 0.018;
+    var endAngle = startAngle + angle - gap;
+    var ax1 = cx + r * Math.cos(startAngle + gap);
+    var ay1 = cy + r * Math.sin(startAngle + gap);
+    var ax2 = cx + r * Math.cos(endAngle);
+    var ay2 = cy + r * Math.sin(endAngle);
+    var ix1 = cx + innerR * Math.cos(endAngle);
+    var iy1 = cy + innerR * Math.sin(endAngle);
+    var ix2 = cx + innerR * Math.cos(startAngle + gap);
+    var iy2 = cy + innerR * Math.sin(startAngle + gap);
+    var largeArc = (angle - gap) > Math.PI ? 1 : 0;
+    paths += '<path d="M ' + ax1.toFixed(2) + ' ' + ay1.toFixed(2) +
+      ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + ax2.toFixed(2) + ' ' + ay2.toFixed(2) +
+      ' L ' + ix1.toFixed(2) + ' ' + iy1.toFixed(2) +
+      ' A ' + innerR + ' ' + innerR + ' 0 ' + largeArc + ' 0 ' + ix2.toFixed(2) + ' ' + iy2.toFixed(2) +
+      ' Z" fill="' + seg.color + '" />';
+    startAngle += angle;
+  });
+  /* Legend */
+  var legend = segments.filter(function(s) { return s.value > 0; }).map(function(seg) {
+    var pct = Math.round((seg.value / total) * 100);
+    return '<div style="display:flex;align-items:center;gap:0.45rem;font-size:0.78rem;margin-bottom:0.3rem">' +
+      '<span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:' + seg.color + ';flex-shrink:0"></span>' +
+      '<span style="color:var(--text-muted)">' + seg.label + '</span>' +
+      '<span style="font-weight:700;color:var(--navy);margin-left:auto">$' + seg.value.toFixed(2) + '</span>' +
+      '<span style="color:var(--text-muted);width:30px;text-align:right">' + pct + '%</span>' +
+    '</div>';
+  }).join('');
+  return '<div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap;justify-content:center">' +
+    '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="flex-shrink:0">' +
+      paths +
+    '</svg>' +
+    '<div style="min-width:200px">' + legend + '</div>' +
+  '</div>';
+}
+
+/* ADDED: main budget render */
+function renderBudgetTab() {
+  var S = window.State;
+  var wrap = document.getElementById('budget-content');
+  if (!wrap) return;
+
+  /* ── Period filter helper ─────────────────────────────────── */
+  var now = new Date();
+  var thisYearStr  = String(now.getFullYear());
+  var thisMonthStr = thisYearStr + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+  function inPeriod(isoDate) {
+    if (!isoDate) return false;
+    if (S.budgetPeriodFilter === 'month') return isoDate.substring(0, 7) === thisMonthStr;
+    if (S.budgetPeriodFilter === 'ytd')   return isoDate.substring(0, 4) === thisYearStr;
+    return true; /* 'all' */
+  }
+
+  var periodOrders   = S.orders.filter(function(o) { return inPeriod(o.date); });
+  var periodExpenses = S.supplyExpenses.filter(function(e) { return inPeriod(e.date); });
+
+  /* ── Financials ───────────────────────────────────────────── */
+  var paidOrders    = periodOrders.filter(function(o) { return o.paid; });
+  var unpaidOrders  = periodOrders.filter(function(o) { return !o.paid; });
+  var paidRevenue   = paidOrders.reduce(function(s, o)   { return s + parseFloat(o.total   || 0); }, 0);
+  var unpaidRevenue = unpaidOrders.reduce(function(s, o) { return s + parseFloat(o.total   || 0); }, 0);
+  var totalRevenue  = paidRevenue + unpaidRevenue;
+  var supplyCost    = periodExpenses.reduce(function(s, e) { return s + parseFloat(e.amount || 0); }, 0);
+  var netProfit     = paidRevenue - supplyCost;
+
+  /* ── Period buttons ───────────────────────────────────────── */
+  function periodBtn(val, label) {
+    var active = S.budgetPeriodFilter === val;
+    return '<button onclick="setBudgetPeriod(\'' + val + '\')" style="' +
+      'padding:0.38rem 1rem;border-radius:50px;cursor:pointer;white-space:nowrap;' +
+      'font-family:\'DM Sans\',sans-serif;font-size:0.82rem;font-weight:600;transition:all 0.2s;' +
+      'border:1.5px solid ' + (active ? 'var(--navy)' : 'var(--cream-dark)') + ';' +
+      'background:' + (active ? 'var(--navy)' : 'var(--white)') + ';' +
+      'color:' + (active ? 'var(--cream)' : 'var(--text-muted)') + '">' + label + '</button>';
+  }
+  var periodBar =
+    '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1.5rem;align-items:center">' +
+      periodBtn('month', 'This Month') +
+      periodBtn('ytd',   'Year to Date') +
+      periodBtn('all',   'All Time') +
+      '<button onclick="loadSupplyExpenses()" style="' +
+        'padding:0.38rem 1rem;border-radius:50px;cursor:pointer;margin-left:auto;' +
+        'font-family:\'DM Sans\',sans-serif;font-size:0.82rem;font-weight:600;transition:all 0.2s;' +
+        'border:1.5px solid var(--blue);background:var(--white);color:var(--blue-dark)">\u21BB Refresh</button>' +
+    '</div>';
+
+  /* ── Stat cards ───────────────────────────────────────────── */
+  function statCard(label, amount, sub, colorVar, bgVar) {
+    var sign = amount < 0 ? '' : '';
+    return '<div style="background:' + bgVar + ';border-radius:var(--radius);padding:1.25rem 1.5rem;' +
+      'border:1px solid var(--cream-dark);text-align:center;flex:1;min-width:140px">' +
+      '<div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;' +
+        'color:var(--text-muted);margin-bottom:0.4rem">' + label + '</div>' +
+      '<div style="font-family:\'Playfair Display\',serif;font-size:1.7rem;font-weight:700;' +
+        'color:' + colorVar + '">' + sign + '$' + Math.abs(amount).toFixed(2) + '</div>' +
+      (sub ? '<div style="font-size:0.76rem;color:var(--text-muted);margin-top:0.2rem">' + sub + '</div>' : '') +
+    '</div>';
+  }
+  var statsHtml =
+    '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem">' +
+      statCard('Paid Revenue',   paidRevenue,   paidOrders.length + ' orders',   '#3a7a4a',       'var(--green-light)') +
+      statCard('Unpaid Revenue', unpaidRevenue, unpaidOrders.length + ' orders', '#a03030',       'var(--red-light)') +
+      statCard('Supply Costs',   supplyCost,    periodExpenses.length + ' purchases', '#8a4a30', '#fdeee8') +
+      statCard(netProfit >= 0 ? 'Net Profit' : 'Net Loss', netProfit, 'paid \u2212 supplies',
+        netProfit >= 0 ? 'var(--navy)' : 'var(--red)', 'var(--cream)') +
+    '</div>';
+
+  /* ── Pie / donut chart ────────────────────────────────────── */
+  var chartSegments = [
+    { label: 'Paid Revenue',   value: paidRevenue,   color: 'var(--green)' },
+    { label: 'Unpaid Revenue', value: unpaidRevenue, color: 'var(--red)' },
+    { label: 'Supply Costs',   value: supplyCost,    color: '#E8B4A0' }
+  ];
+  var chartHtml =
+    '<div style="background:var(--cream);border:1px solid var(--cream-dark);border-radius:var(--radius);' +
+      'padding:1.5rem;margin-bottom:1.5rem">' +
+      '<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;' +
+        'color:var(--text-muted);margin-bottom:1rem">Breakdown</div>' +
+      buildDonutChart(chartSegments, 180) +
+    '</div>';
+
+  /* ── Log supply purchase form ─────────────────────────────── */
+  var inputStyle = 'flex:1;padding:0.5rem 0.7rem;border-radius:8px;border:1.5px solid var(--cream-dark);' +
+    'background:var(--white);font-family:\'DM Sans\',sans-serif;font-size:0.85rem;outline:none;min-width:100px';
+  var supplyFormHtml =
+    '<div style="background:var(--cream);border:1px solid var(--cream-dark);border-radius:var(--radius);' +
+      'padding:1.25rem 1.5rem;margin-bottom:1.5rem">' +
+      '<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;' +
+        'color:var(--text-muted);margin-bottom:0.85rem">Log Supply Purchase</div>' +
+      '<div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:flex-end">' +
+        '<div style="display:flex;flex-direction:column;gap:0.25rem;flex:1;min-width:120px">' +
+          '<label style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Date</label>' +
+          '<input type="date" id="supply-date" value="' + toLocalISO(new Date()) + '" style="' + inputStyle + '" />' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:0.25rem;flex:1;min-width:100px">' +
+          '<label style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Amount $</label>' +
+          '<input type="number" id="supply-amount" min="0" step="0.01" placeholder="0.00" style="' + inputStyle + '" />' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:0.25rem;flex:2;min-width:160px">' +
+          '<label style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Notes</label>' +
+          '<input type="text" id="supply-notes" placeholder="e.g. Flour, butter from Costco" style="' + inputStyle + '" />' +
+        '</div>' +
+        '<button id="supply-save-btn" onclick="addSupplyExpense()" class="add-btn" ' +
+          'style="padding:0.5rem 1.2rem;align-self:flex-end">+ Add</button>' +
+      '</div>' +
+    '</div>';
+
+  /* ── Supply expenses table ────────────────────────────────── */
+  var allExpenses = S.supplyExpenses;
+  var expenseTableHtml = '';
+  if (allExpenses.length) {
+    expenseTableHtml =
+      '<div style="margin-bottom:1.5rem">' +
+        '<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;' +
+          'color:var(--text-muted);margin-bottom:0.75rem">Supply Expense Log (all time)</div>' +
+        '<div style="overflow-x:auto"><table class="orders-table">' +
+          '<thead><tr><th>Date</th><th>Amount</th><th>Notes</th><th></th></tr></thead>' +
+          '<tbody>' +
+            allExpenses.map(function(e) {
+              return '<tr>' +
+                '<td style="font-size:0.82rem">' + e.date + '</td>' +
+                '<td><strong>$' + parseFloat(e.amount).toFixed(2) + '</strong></td>' +
+                '<td style="font-size:0.8rem;color:var(--text-muted)">' + (e.notes || '\u2014') + '</td>' +
+                '<td><button class="delete-btn" onclick="deleteSupplyExpenseRow(' + e.id + ')" title="Delete">\u2715</button></td>' +
+              '</tr>';
+            }).join('') +
+          '</tbody>' +
+        '</table></div>' +
+      '</div>';
+  }
+
+  /* ── Orders in period ─────────────────────────────────────── */
+  var ordersTableHtml = '';
+  if (periodOrders.length) {
+    ordersTableHtml =
+      '<div>' +
+        '<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;' +
+          'color:var(--text-muted);margin-bottom:0.75rem">Orders in Period</div>' +
+        '<div style="overflow-x:auto"><table class="orders-table">' +
+          '<thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Total</th><th>Status</th></tr></thead>' +
+          '<tbody>' +
+            periodOrders.map(function(o) {
+              return '<tr>' +
+                '<td><strong style="font-size:0.82rem">' + o.id + '</strong></td>' +
+                '<td>' + o.name + '</td>' +
+                '<td style="font-size:0.82rem">' + o.date + '</td>' +
+                '<td><strong>$' + o.total + '</strong></td>' +
+                '<td><span class="order-status ' + (o.paid ? 's-paid' : 's-unpaid') + '">' + (o.paid ? 'Paid' : 'Unpaid') + '</span></td>' +
+              '</tr>';
+            }).join('') +
+          '</tbody>' +
+        '</table></div>' +
+      '</div>';
+  } else {
+    ordersTableHtml = '<p style="color:var(--text-muted);font-size:0.88rem;text-align:center;padding:1rem 0">No orders in this period.</p>';
+  }
+
+  wrap.innerHTML = periodBar + statsHtml + chartHtml + supplyFormHtml + expenseTableHtml + ordersTableHtml;
 }
 
 /* ─── PRODUCTS TAB (CHANGE 4: photo preview + URL input + delete) */
@@ -650,6 +1064,72 @@ function deleteProduct(id) {
 function toggleAddProductForm() {
   var form = document.getElementById('add-product-form');
   form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+/* ─── ITEM QUANTITY POP-UP (Task 7) ──────────────────────────── */
+/* ADDED (Task 7): show a modal with the full item list and quantities for one order.
+   Triggered by clicking the items cell in the incoming orders table. */
+function showOrderItemsModal(idx) {
+  var o = window.State.orders[idx];
+  if (!o) return;
+
+  /* Parse the items string ("Classic Loaf ×2, Apple Fritter Loaf ×1") into rows */
+  var lines = o.items.split(', ').filter(function(s) { return s.trim(); });
+  var rowsHtml = lines.map(function(line) {
+    /* Split on the last × to separate name from quantity */
+    var crossIdx = line.lastIndexOf('\u00D7');
+    var name = crossIdx !== -1 ? line.substring(0, crossIdx).trim() : line.trim();
+    var qty  = crossIdx !== -1 ? line.substring(crossIdx) : '';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;' +
+      'padding:0.6rem 0;border-bottom:1px solid var(--cream-dark)">' +
+      '<span style="font-size:0.9rem;color:var(--text)">' + name + '</span>' +
+      (qty ? '<span style="background:var(--navy);color:var(--cream);padding:0.15rem 0.55rem;' +
+        'border-radius:50px;font-size:0.8rem;font-weight:700;white-space:nowrap">' + qty + '</span>' : '') +
+    '</div>';
+  }).join('');
+
+  /* Build and inject the overlay */
+  var existing = document.getElementById('order-items-modal');
+  if (existing) existing.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'order-items-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;' +
+    'background:rgba(28,43,58,0.45);backdrop-filter:blur(2px);animation:fadeIn 0.2s ease both';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  /* Click backdrop to close */
+  modal.addEventListener('click', function(e) { if (e.target === modal) closeOrderItemsModal(); });
+
+  modal.innerHTML =
+    '<div style="background:var(--white);border-radius:var(--radius);padding:1.75rem;max-width:420px;' +
+      'width:90%;box-shadow:var(--shadow-hover);max-height:80vh;overflow-y:auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">' +
+        '<div>' +
+          '<div style="font-family:\'Playfair Display\',serif;font-size:1.1rem;font-weight:600;color:var(--navy)">' +
+            o.name + '\u2019s Order</div>' +
+          '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.15rem">' +
+            o.id + ' &nbsp;&middot;&nbsp; ' + o.date +
+          '</div>' +
+        '</div>' +
+        '<button onclick="closeOrderItemsModal()" style="background:none;border:none;font-size:1.3rem;' +
+          'cursor:pointer;color:var(--text-muted);line-height:1;padding:0.1rem 0.3rem">&times;</button>' +
+      '</div>' +
+      '<div>' + (rowsHtml || '<p style="color:var(--text-muted);font-size:0.88rem">No items found.</p>') + '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;' +
+        'padding-top:0.75rem;border-top:2px solid var(--cream-dark)">' +
+        '<span style="font-size:0.85rem;color:var(--text-muted)">Order total</span>' +
+        '<strong style="font-size:1rem;color:var(--navy)">$' + o.total + '</strong>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+}
+
+/* ADDED (Task 7): close the item-quantity modal */
+function closeOrderItemsModal() {
+  var modal = document.getElementById('order-items-modal');
+  if (modal) modal.remove();
 }
 
 function addProduct() {

@@ -321,3 +321,127 @@ function deleteProductDb(id) {
 window.fetchProducts   = fetchProducts;
 window.upsertProduct   = upsertProduct;
 window.deleteProductDb = deleteProductDb;
+
+/**
+ * ADDED (Task 3): Persist a boolean status field on an orders row.
+ * Used to save paid/received toggles so they survive page refresh.
+ * @param {number} dbId   - The numeric primary key of the order row
+ * @param {string} field  - Column name to update ('paid' or 'received')
+ * @param {boolean} value - New value
+ */
+function patchOrderStatus(dbId, field, value) {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.resolve();
+  var payload = {};
+  payload[field] = value;
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/orders?id=eq.' + encodeURIComponent(dbId), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': key,
+      'Authorization': 'Bearer ' + key
+    },
+    body: JSON.stringify(payload)
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) {
+      var detail = t;
+      try { var p = JSON.parse(t); detail = p.message || p.error_description || p.error || t; } catch (e) {}
+      throw new Error('patchOrderStatus failed (' + r.status + '): ' + detail);
+    });
+    return true;
+  });
+}
+
+window.patchOrderStatus = patchOrderStatus;
+
+/**
+ * ADDED: Patch multiple columns on one orders row in a single request.
+ * Used to write fields that the place_order RPC doesn't handle
+ * (payment, fulfillment, delivery_address, paid, received).
+ *
+ * @param {number|string} dbId   - Numeric primary key of the row
+ * @param {Object}        fields - Plain object of column→value pairs to update
+ */
+function patchOrderFields(dbId, fields) {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.resolve();
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/orders?id=eq.' + encodeURIComponent(dbId), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': key,
+      'Authorization': 'Bearer ' + key
+    },
+    body: JSON.stringify(fields)
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) {
+      var detail = t;
+      try { var p = JSON.parse(t); detail = p.message || p.error_description || p.error || t; } catch (e) {}
+      throw new Error('patchOrderFields failed (' + r.status + '): ' + detail);
+    });
+    return true;
+  });
+}
+
+window.patchOrderFields = patchOrderFields;
+
+/**
+ * ADDED: Fetch all rows from the supply_expenses table, newest first.
+ * Table schema: id bigserial PK, date date, amount numeric(10,2), notes text, created_at timestamptz
+ */
+function fetchSupplyExpenses() {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.reject(new Error('Supabase not configured.'));
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/supply_expenses?select=*&order=date.desc', {
+    method: 'GET',
+    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('fetchSupplyExpenses failed (' + r.status + '): ' + t); });
+    return r.json();
+  });
+}
+
+/**
+ * ADDED: Insert one supply expense row and return the saved row.
+ */
+function saveSupplyExpense(row) {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.reject(new Error('Supabase not configured.'));
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/supply_expenses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': key,
+      'Authorization': 'Bearer ' + key,
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(row)
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('saveSupplyExpense failed (' + r.status + '): ' + t); });
+    return r.json().then(function(rows) { return rows && rows[0] ? rows[0] : row; });
+  });
+}
+
+/**
+ * ADDED: Delete one supply expense row by its numeric id.
+ */
+function deleteSupplyExpense(id) {
+  var url = (window.__ENV__ && window.__ENV__.SUPABASE_URL) || '';
+  var key = (window.__ENV__ && window.__ENV__.SUPABASE_ANON_KEY) || '';
+  if (!url || !key) return Promise.reject(new Error('Supabase not configured.'));
+  return fetch(url.replace(/\/$/, '') + '/rest/v1/supply_expenses?id=eq.' + encodeURIComponent(id), {
+    method: 'DELETE',
+    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('deleteSupplyExpense failed (' + r.status + '): ' + t); });
+    return true;
+  });
+}
+
+window.fetchSupplyExpenses  = fetchSupplyExpenses;
+window.saveSupplyExpense    = saveSupplyExpense;
+window.deleteSupplyExpense  = deleteSupplyExpense;
