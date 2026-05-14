@@ -213,6 +213,11 @@ function setOrdersFilter(val) {
   renderOrdersTab();
 }
 
+function toggleOrdersHideReceived() {
+  window.State.ordersHideReceived = !window.State.ordersHideReceived;
+  renderOrdersTab();
+}
+
 /* ADDED: month filter setter for Day Summary tab */
 function setSummaryMonthFilter(val) {
   window.State.summaryMonthFilter = val;
@@ -228,6 +233,16 @@ function renderOrdersTab() {
     if (S.ordersFilter === 'pickup')   return f === 'Pickup';
     if (S.ordersFilter === 'delivery') return f !== 'Pickup';
     return true;
+  });
+
+  /* Hide received if toggled */
+  if (S.ordersHideReceived) {
+    filteredOrders = filteredOrders.filter(function(o) { return !o.received; });
+  }
+
+  /* Sort: non-received first, received at bottom */
+  filteredOrders = filteredOrders.slice().sort(function(a, b) {
+    return (a.received ? 1 : 0) - (b.received ? 1 : 0);
   });
 
   var badge = document.getElementById('orders-badge');
@@ -250,6 +265,13 @@ function renderOrdersTab() {
     filterBtn('all', 'All Orders') +
     filterBtn('pickup', '\uD83C\uDFE0 Pickup Only') +
     filterBtn('delivery', '\uD83D\uDE97 Delivery Only') +
+    '<button onclick="toggleOrdersHideReceived()" style="' +
+      'padding:0.4rem 1rem;border-radius:50px;cursor:pointer;' +
+      'font-family:\'DM Sans\',sans-serif;font-size:0.82rem;font-weight:600;transition:all 0.2s;' +
+      'border:1.5px solid ' + (S.ordersHideReceived ? 'var(--navy)' : 'var(--cream-dark)') + ';' +
+      'background:' + (S.ordersHideReceived ? 'var(--navy)' : 'var(--white)') + ';' +
+      'color:' + (S.ordersHideReceived ? 'var(--cream)' : 'var(--text-muted)') + '">' +
+      (S.ordersHideReceived ? '\u2713 Hiding Received' : 'Hide Received') + '</button>' +
     '<button onclick="loadOrdersFromSupabase()" style="' +
       'padding:0.4rem 1rem;border-radius:50px;cursor:pointer;margin-left:auto;' +
       'font-family:\'DM Sans\',sans-serif;font-size:0.82rem;font-weight:600;transition:all 0.2s;' +
@@ -659,6 +681,13 @@ function renderDaySummaryTab() {
 /* ADDED: period filter setter — 'month', 'ytd', or 'all' */
 function setBudgetPeriod(val) {
   window.State.budgetPeriodFilter = val;
+  window.State.budgetMonthFilter = 'all'; /* clear specific month when switching period */
+  renderBudgetTab();
+}
+
+/* ADDED: specific month filter setter for budget */
+function setBudgetMonthFilter(val) {
+  window.State.budgetMonthFilter = val;
   renderBudgetTab();
 }
 
@@ -774,6 +803,22 @@ function renderBudgetTab() {
   var wrap = document.getElementById('budget-content');
   if (!wrap) return;
 
+  /* ── Collect unique months from all orders + expenses ─────── */
+  var allMonths = [];
+  S.orders.forEach(function(o) {
+    if (o.date && o.date.length >= 7) {
+      var ym = o.date.substring(0, 7);
+      if (allMonths.indexOf(ym) === -1) allMonths.push(ym);
+    }
+  });
+  S.supplyExpenses.forEach(function(e) {
+    if (e.date && e.date.length >= 7) {
+      var ym = e.date.substring(0, 7);
+      if (allMonths.indexOf(ym) === -1) allMonths.push(ym);
+    }
+  });
+  allMonths.sort();
+
   /* ── Period filter helper ─────────────────────────────────── */
   var now = new Date();
   var thisYearStr  = String(now.getFullYear());
@@ -781,6 +826,8 @@ function renderBudgetTab() {
 
   function inPeriod(isoDate) {
     if (!isoDate) return false;
+    /* Specific month overrides the period buttons */
+    if (S.budgetMonthFilter !== 'all') return isoDate.substring(0, 7) === S.budgetMonthFilter;
     if (S.budgetPeriodFilter === 'month') return isoDate.substring(0, 7) === thisMonthStr;
     if (S.budgetPeriodFilter === 'ytd')   return isoDate.substring(0, 4) === thisYearStr;
     return true; /* 'all' */
@@ -798,9 +845,9 @@ function renderBudgetTab() {
   var supplyCost    = periodExpenses.reduce(function(s, e) { return s + parseFloat(e.amount || 0); }, 0);
   var netProfit     = paidRevenue - supplyCost;
 
-  /* ── Period buttons ───────────────────────────────────────── */
+  /* ── Period buttons (disabled when a specific month is chosen) */
   function periodBtn(val, label) {
-    var active = S.budgetPeriodFilter === val;
+    var active = S.budgetMonthFilter === 'all' && S.budgetPeriodFilter === val;
     return '<button onclick="setBudgetPeriod(\'' + val + '\')" style="' +
       'padding:0.38rem 1rem;border-radius:50px;cursor:pointer;white-space:nowrap;' +
       'font-family:\'DM Sans\',sans-serif;font-size:0.82rem;font-weight:600;transition:all 0.2s;' +
@@ -808,11 +855,27 @@ function renderBudgetTab() {
       'background:' + (active ? 'var(--navy)' : 'var(--white)') + ';' +
       'color:' + (active ? 'var(--cream)' : 'var(--text-muted)') + '">' + label + '</button>';
   }
+
+  /* ── Month dropdown ───────────────────────────────────────── */
+  var inputStyle = 'padding:0.38rem 0.7rem;border-radius:50px;border:1.5px solid var(--cream-dark);' +
+    'background:' + (S.budgetMonthFilter !== 'all' ? 'var(--navy)' : 'var(--white)') + ';' +
+    'color:' + (S.budgetMonthFilter !== 'all' ? 'var(--cream)' : 'var(--text-muted)') + ';' +
+    'font-family:\'DM Sans\',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;outline:none';
+  var monthOpts = '<option value="all"' + (S.budgetMonthFilter === 'all' ? ' selected' : '') + '>Pick a Month</option>' +
+    allMonths.map(function(ym) {
+      var parts = ym.split('-');
+      var label = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1)
+        .toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+      return '<option value="' + ym + '"' + (S.budgetMonthFilter === ym ? ' selected' : '') + '>' + label + '</option>';
+    }).join('');
+  var monthDropdown = '<select onchange="setBudgetMonthFilter(this.value)" style="' + inputStyle + '">' + monthOpts + '</select>';
+
   var periodBar =
     '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1.5rem;align-items:center">' +
       periodBtn('month', 'This Month') +
       periodBtn('ytd',   'Year to Date') +
       periodBtn('all',   'All Time') +
+      monthDropdown +
       '<button onclick="loadSupplyExpenses()" style="' +
         'padding:0.38rem 1rem;border-radius:50px;cursor:pointer;margin-left:auto;' +
         'font-family:\'DM Sans\',sans-serif;font-size:0.82rem;font-weight:600;transition:all 0.2s;' +

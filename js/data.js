@@ -52,9 +52,11 @@ window.State = {
 
   /* MODIFIED: orders filter state for Pickup/Delivery segmented control (CHANGE 5) */
   ordersFilter: 'all',             /* 'all', 'pickup', or 'delivery' */
+  ordersHideReceived: false,        /* when true, hides received orders from the list */
 
-  /* ADDED: budget tab period filter — 'month', 'ytd', or 'all' */
+  /* ADDED: budget tab period filter — 'month', 'ytd', 'all', or 'YYYY-MM' for a specific month */
   budgetPeriodFilter: 'month',
+  budgetMonthFilter: 'all',         /* 'all' or 'YYYY-MM' — overrides period filter when set */
 
   /* ADDED: supply expense records loaded from Supabase supply_expenses table */
   supplyExpenses: [],

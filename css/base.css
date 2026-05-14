@@ -118,6 +118,14 @@ body::before {
 }
 .payment-option.selected label { color: var(--cream); }
 
+/* FOOTER */
+.site-footer {
+  text-align: center; padding: 2rem 1rem; margin-top: 2rem;
+  border-top: 1px solid var(--cream-dark); color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.site-footer strong { color: var(--navy); font-weight: 600; }
+
 /* RESPONSIVE SHARED */
 @media (max-width: 800px) {
   .page-hero { padding: 36px 5% 28px; }
