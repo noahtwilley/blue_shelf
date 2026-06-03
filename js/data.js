@@ -33,7 +33,8 @@ window.State = {
     step: 1,
     date: null,
     mode: null,
-    deliveryAddr: null
+    deliveryAddr: null,
+    orderType: null  /* 'stand' | 'preorder' */
   },
 
   deliveryFee: 2.00,

@@ -7,7 +7,7 @@
 /* ─── HELPERS ────────────────────────────────────────────────── */
 /* MODIFIED: compatibility helpers for old orders (mode/deliveryAddr) and new (fulfillment/address) (CHANGE 5) */
 function getOrderFulfillment(o) {
-  return o.fulfillment || (o.mode === 'pickup' ? 'Pickup' : 'Delivery');
+  return o.fulfillment || (o.mode === 'stand' ? 'Stand' : (o.mode === 'pickup' ? 'Pickup' : 'Delivery'));
 }
 function getOrderAddress(o) {
   return o.address || o.deliveryAddr || null;
@@ -42,7 +42,7 @@ function normalizeDbOrder(row) {
     paid:         row.paid         || false,
     received:     row.received     || false,
     notes:        row.notes        || '',
-    mode:         fulfillment === 'Pickup' ? 'pickup' : 'delivery',
+    mode:         fulfillment === 'Stand' ? 'stand' : (fulfillment === 'Pickup' ? 'pickup' : 'delivery'),
     deliveryAddr: row.delivery_address || null,
     fulfillment:  fulfillment,
     address:      row.delivery_address || null
@@ -231,7 +231,8 @@ function renderOrdersTab() {
   var filteredOrders = S.orders.filter(function(o) {
     var f = getOrderFulfillment(o);
     if (S.ordersFilter === 'pickup')   return f === 'Pickup';
-    if (S.ordersFilter === 'delivery') return f !== 'Pickup';
+    if (S.ordersFilter === 'delivery') return f === 'Delivery';
+    if (S.ordersFilter === 'stand')    return f === 'Stand';
     return true;
   });
 
@@ -265,6 +266,7 @@ function renderOrdersTab() {
     filterBtn('all', 'All Orders') +
     filterBtn('pickup', '\uD83C\uDFE0 Pickup Only') +
     filterBtn('delivery', '\uD83D\uDE97 Delivery Only') +
+    filterBtn('stand', '\uD83C\uDFAA Stand Only') +
     '<button onclick="toggleOrdersHideReceived()" style="' +
       'padding:0.4rem 1rem;border-radius:50px;cursor:pointer;' +
       'font-family:\'DM Sans\',sans-serif;font-size:0.82rem;font-weight:600;transition:all 0.2s;' +
@@ -296,11 +298,11 @@ function renderOrdersTab() {
       var address = getOrderAddress(o);
       var itemsShort = o.items.length > 30 ? o.items.substring(0, 30) + '\u2026' : o.items;
       /* MODIFIED: fulfillment pill — blue for pickup, blush for delivery (CHANGE 5) */
+      var fulfillmentTag = fulfillment === 'Stand' ? 'tag-amber' : (fulfillment === 'Pickup' ? 'tag-blue' : 'tag-blush');
+      var fulfillmentLabel = fulfillment === 'Stand' ? '\uD83C\uDFEA Stand' : (fulfillment === 'Pickup' ? '\uD83C\uDFE0 Pickup' : '\uD83D\uDE97 Delivery');
       var fulfillmentCell =
-        '<span class="tag ' + (fulfillment === 'Pickup' ? 'tag-blue' : 'tag-blush') + '">' +
-          (fulfillment === 'Pickup' ? '\uD83C\uDFE0 Pickup' : '\uD83D\uDE97 Delivery') +
-        '</span>' +
-        (fulfillment !== 'Pickup' && address ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">' + address + '</div>' : '');
+        '<span class="tag ' + fulfillmentTag + '">' + fulfillmentLabel + '</span>' +
+        (fulfillment === 'Delivery' && address ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">' + address + '</div>' : '');
       return '<tr>' +
         '<td><strong style="font-size:0.82rem">' + o.id + '</strong></td>' +
         '<td><span style="font-weight:600">' + o.name + '</span></td>' +

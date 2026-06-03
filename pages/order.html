@@ -1,5 +1,5 @@
 <!-- === BLUE SHELF MICROBAKERY === FILE: pages/order.html === -->
-<!-- Order page: 4-step wizard (Date → Pickup/Delivery → Products → Checkout) -->
+<!-- Order page: order-type selector + 4-step wizard (Date → Pickup/Delivery → Products → Checkout) -->
 
 <div class="page" id="page-order">
   <div class="page-hero" data-emoji="🛍️">
@@ -26,7 +26,29 @@
       <p class="success-redirect">Redirecting you back in a moment…</p>
       <a class="success-goback" href="#" onclick="goBackNow(); return false;">Go back now</a>
     </div>
-    <div id="wizard-wrap">
+    <!-- ORDER TYPE SELECTION (shown before wizard starts) -->
+    <div id="order-type-screen">
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--navy);margin-bottom:0.5rem">How are you ordering?</h2>
+      <p style="color:var(--text-muted);margin-bottom:1.5rem">Are you here at the stand, or placing an order for a future baking day?</p>
+      <div class="option-cards">
+        <div class="option-card" onclick="selectOrderType('stand',this)">
+          <div class="option-card-emoji">🏪</div>
+          <h3>Stand Order</h3>
+          <p>You're here right now — we'll process your order on the spot.</p>
+        </div>
+        <div class="option-card" onclick="selectOrderType('preorder',this)">
+          <div class="option-card-emoji">📅</div>
+          <h3>Pre-order</h3>
+          <p>Order ahead for a future baking day.</p>
+        </div>
+      </div>
+      <div class="wizard-buttons">
+        <button class="wizard-btn-prev" disabled>← Back</button>
+        <button class="wizard-btn-next" id="btn-order-type-next" onclick="enterOrderFlow()" disabled>Next →</button>
+      </div>
+    </div>
+
+    <div id="wizard-wrap" style="display:none">
       <!-- SOLD OUT BANNER (shown when all items for selected date are sold out) -->
       <div id="soldout-banner" class="soldout-banner" style="display:none">
         😔 All items for this date are sold out. Please go back and choose a different baking day.
@@ -95,7 +117,7 @@
           </div>
           <div style="margin-bottom:2rem">
             <div class="wizard-buttons" style="padding-bottom:6rem">
-              <button class="wizard-btn-prev" onclick="goToStep(2)">← Back</button>
+              <button class="wizard-btn-prev" onclick="backFromProducts()">← Back</button>
             </div>
           </div>
         </div>

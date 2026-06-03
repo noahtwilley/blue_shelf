@@ -44,6 +44,7 @@ body::before {
 .tag-red { background: var(--red-light); color: #a03030; }
 .tag-blue { background: var(--blue-xlight); color: var(--blue-dark); }
 .tag-blush { background: #fdeee8; color: #8a4a30; }
+.tag-amber { background: #fff3cd; color: #7a5a00; }
 .tag-muted { background: var(--cream-dark); color: var(--text-muted); }
 
 /* SHARED FORM ELEMENTS */
