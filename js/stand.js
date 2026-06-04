@@ -172,6 +172,7 @@ function submitStandOrder() {
   var btn = document.getElementById('stand-place-btn');
 
   if (!name || !phone) { showToast('Please add a name and phone number'); return; }
+  if (!email) { showToast('Please add an email address'); return; }
   if (!S.cart.length) { showToast('Add at least one item'); return; }
 
   var total = S.cart.reduce(function(s, c) {
@@ -186,7 +187,7 @@ function submitStandOrder() {
 
   var payload = {
     name: name,
-    email: email || null,
+    email: email,
     phone: phone,
     items: dbItems,
     quantity: S.cart.reduce(function(sum, c) { return sum + c.qty; }, 0),
@@ -251,9 +252,8 @@ function submitStandOrder() {
     S.cart = [];
     if (typeof updateCartBadge === 'function') updateCartBadge();
 
-    /* Email receipt only if the customer gave an address */
     var done = function() { showStandSuccess(name, payment, total.toFixed(2)); btn.disabled = false; btn.textContent = originalLabel; };
-    if (email && typeof sendOrderEmail === 'function') {
+    if (typeof sendOrderEmail === 'function') {
       sendOrderEmail(order).then(done, done);
     } else {
       done();
