@@ -252,7 +252,7 @@ function submitStandOrder() {
     if (typeof updateCartBadge === 'function') updateCartBadge();
 
     /* Email receipt only if the customer gave an address */
-    var done = function() { showStandSuccess(name); btn.disabled = false; btn.textContent = originalLabel; };
+    var done = function() { showStandSuccess(name, payment, total.toFixed(2)); btn.disabled = false; btn.textContent = originalLabel; };
     if (email && typeof sendOrderEmail === 'function') {
       sendOrderEmail(order).then(done, done);
     } else {
@@ -267,10 +267,29 @@ function submitStandOrder() {
 }
 
 /* ─── SUCCESS / RESET ───────────────────────────────────────── */
-function showStandSuccess(name) {
+function showStandSuccess(name, payment, total) {
   var first = (name || 'there').split(' ')[0];
   document.getElementById('stand-success-heading').textContent = 'Thanks, ' + first + '!';
-  document.getElementById('stand-success-sub').textContent = 'Your order is in. Enjoy!';
+
+  var etransferCard = document.getElementById('stand-etransfer-card');
+  var isEtransfer = payment && payment.toLowerCase().indexOf('transfer') !== -1;
+
+  if (isEtransfer && etransferCard) {
+    var payEmail = (window.State && window.State.paymentEmail) || '';
+    var amountStr = total ? '$' + total : '';
+    document.getElementById('stand-etransfer-amount').textContent = amountStr;
+    var emailLink = document.getElementById('stand-etransfer-link');
+    emailLink.textContent = payEmail;
+    emailLink.href = 'mailto:' + payEmail +
+      '?subject=' + encodeURIComponent('Interac e-Transfer ' + amountStr) +
+      '&body=' + encodeURIComponent('Hi, please find my Interac e-Transfer of ' + amountStr + ' for my Blue Shelf order.');
+    etransferCard.style.display = '';
+    document.getElementById('stand-success-sub').textContent = 'Your order is in — please send your e-transfer now.';
+  } else {
+    if (etransferCard) etransferCard.style.display = 'none';
+    document.getElementById('stand-success-sub').textContent = 'Your order is in. Enjoy!';
+  }
+
   document.getElementById('stand-success').classList.add('show');
   document.getElementById('stand-checkout-bar').classList.add('hide');
 }

@@ -115,6 +115,27 @@
   font-family: 'DM Sans', sans-serif; font-size: 1.1rem; font-weight: 700; cursor: pointer; touch-action: manipulation;
 }
 
+/* E-TRANSFER PROMPT */
+.stand-etransfer-card {
+  background: var(--blue-xlight); border: 1.5px solid var(--blue); border-radius: 16px;
+  padding: 1.25rem 1.5rem; margin: 0.25rem 0 1.5rem; width: 100%; max-width: 320px; text-align: center;
+}
+.stand-etransfer-amount {
+  font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 700; color: var(--navy);
+  line-height: 1.1; margin-bottom: 0.5rem;
+}
+.stand-etransfer-to {
+  font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.09em; margin: 0 0 0.35rem;
+}
+.stand-etransfer-email {
+  font-size: 1.05rem; font-weight: 700; color: var(--blue-dark); word-break: break-all;
+  text-decoration: none; display: block; padding: 0.6rem 0.75rem;
+  background: var(--white); border-radius: 10px; margin-bottom: 0.75rem;
+}
+.stand-etransfer-email:hover { text-decoration: underline; }
+.stand-etransfer-hint { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+
 /* Larger screens: keep it centered and tidy */
 @media (min-width: 600px) {
   .stand-hero h1 { font-size: 2.1rem; }

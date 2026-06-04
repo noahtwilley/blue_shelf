@@ -15,6 +15,13 @@
       </div>
       <h2 id="stand-success-heading">Order placed!</h2>
       <p id="stand-success-sub">Thanks — see you again soon.</p>
+      <!-- E-TRANSFER PROMPT — shown only when payment method is E-Transfer -->
+      <div class="stand-etransfer-card" id="stand-etransfer-card" style="display:none">
+        <div class="stand-etransfer-amount" id="stand-etransfer-amount">$0.00</div>
+        <p class="stand-etransfer-to">Send e-transfer to</p>
+        <a class="stand-etransfer-email" id="stand-etransfer-link" href="#">email@example.com</a>
+        <p class="stand-etransfer-hint">Open your banking app and send an Interac e-Transfer to the address above.</p>
+      </div>
       <button class="stand-next-btn" onclick="standNextCustomer()">Next customer →</button>
     </div>
 
