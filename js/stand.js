@@ -283,7 +283,7 @@ function showStandSuccess(name, payment, total) {
     emailLink.href = 'mailto:' + payEmail +
       '?subject=' + encodeURIComponent('Interac e-Transfer ' + amountStr) +
       '&body=' + encodeURIComponent('Hi, please find my Interac e-Transfer of ' + amountStr + ' for my Blue Shelf order.');
-    etransferCard.style.display = '';
+    etransferCard.style.display = 'block';
     document.getElementById('stand-success-sub').textContent = 'Your order is in — please send your e-transfer now.';
   } else {
     if (etransferCard) etransferCard.style.display = 'none';
