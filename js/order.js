@@ -64,52 +64,8 @@ function hydrateOrderSuccessFromUrl() {
   }, 50);
 })();
 
-/* ─── ORDER TYPE SELECTION ──────────────────────────────────── */
-function selectOrderType(type, card) {
-  window.State.wizardState.orderType = type;
-  document.querySelectorAll('#order-type-screen .option-card').forEach(function(c) { c.classList.remove('selected'); });
-  card.classList.add('selected');
-  document.getElementById('btn-order-type-next').disabled = false;
-}
-
-function enterOrderFlow() {
-  var S = window.State;
-  var type = S.wizardState.orderType;
-  document.getElementById('order-type-screen').style.display = 'none';
-  document.getElementById('wizard-wrap').style.display = '';
-
-  if (type === 'stand') {
-    var today = toLocalISO(new Date());
-    S.wizardState.date = today;
-    S.wizardState.mode = 'stand';
-    S.wizardState.step = 3;
-    document.querySelectorAll('.wizard-step').forEach(function(s, i) {
-      s.classList.toggle('active', i === 2);
-    });
-    document.querySelector('.wizard-progress').style.display = 'none';
-    renderProductsStep();
-    var subtotalEl = document.getElementById('floating-subtotal');
-    if (subtotalEl) subtotalEl.classList.remove('hide');
-    if (typeof refreshAvailability === 'function') {
-      refreshAvailability(today).then(function() { updateSoldOutBanner(today); });
-    }
-  } else {
-    document.querySelector('.wizard-progress').style.display = '';
-    goToStep(1);
-  }
-  window.scrollTo(0, 100);
-}
-
 function backFromProducts() {
-  var S = window.State;
-  if (S.wizardState.orderType === 'stand') {
-    document.getElementById('wizard-wrap').style.display = 'none';
-    document.getElementById('order-type-screen').style.display = '';
-    document.querySelector('.wizard-progress').style.display = '';
-    S.wizardState.step = 1;
-  } else {
-    goToStep(2);
-  }
+  goToStep(2);
 }
 
 /* ─── WIZARD NAVIGATION ─────────────────────────────────────── */
@@ -627,7 +583,7 @@ function submitWizardOrder() {
 
 function resetWizard() {
   var S = window.State;
-  S.wizardState = {step: 1, date: null, mode: null, deliveryAddr: null, orderType: null};
+  S.wizardState = {step: 1, date: null, mode: null, deliveryAddr: null, orderType: 'preorder'};
   document.getElementById('floating-subtotal').classList.add('hide');
   ['f-name', 'f-email', 'f-phone', 'f-notes'].forEach(function(id) {
     var el = document.getElementById(id);
@@ -636,16 +592,9 @@ function resetWizard() {
   /* Reset payment option back to Cash */
   var payOpts = document.querySelectorAll('.payment-option');
   payOpts.forEach(function(p, i) { p.classList.toggle('selected', i === 0); });
-  /* Return to order-type screen */
-  var orderTypeScreen = document.getElementById('order-type-screen');
-  var wizardWrap = document.getElementById('wizard-wrap');
+  /* Ensure progress bar is visible (stand mode used to hide it) */
   var progressBar = document.querySelector('.wizard-progress');
-  if (orderTypeScreen) orderTypeScreen.style.display = '';
-  if (wizardWrap) wizardWrap.style.display = 'none';
   if (progressBar) progressBar.style.display = '';
-  document.querySelectorAll('#order-type-screen .option-card').forEach(function(c) { c.classList.remove('selected'); });
-  var orderTypeNext = document.getElementById('btn-order-type-next');
-  if (orderTypeNext) orderTypeNext.disabled = true;
 }
 
 function resetOrder() {

@@ -844,7 +844,15 @@ function renderBudgetTab() {
   var paidRevenue   = paidOrders.reduce(function(s, o)   { return s + parseFloat(o.total   || 0); }, 0);
   var unpaidRevenue = unpaidOrders.reduce(function(s, o) { return s + parseFloat(o.total   || 0); }, 0);
   var totalRevenue  = paidRevenue + unpaidRevenue;
+  /* ── Revenue split by payment method ──────────────────────── */
+  var cashRevenue      = periodOrders.reduce(function(s, o) {
+    return (o.payment || '').toLowerCase().indexOf('cash') !== -1 ? s + parseFloat(o.total || 0) : s;
+  }, 0);
+  var etransferRevenue = periodOrders.reduce(function(s, o) {
+    return (o.payment || '').toLowerCase().indexOf('transfer') !== -1 ? s + parseFloat(o.total || 0) : s;
+  }, 0);
   var supplyCost    = periodExpenses.reduce(function(s, e) { return s + parseFloat(e.amount || 0); }, 0);
+  var taxAmount     = totalRevenue * 0.20;
   var netProfit     = paidRevenue - supplyCost;
 
   /* ── Period buttons (disabled when a specific month is chosen) */
@@ -896,11 +904,30 @@ function renderBudgetTab() {
       (sub ? '<div style="font-size:0.76rem;color:var(--text-muted);margin-top:0.2rem">' + sub + '</div>' : '') +
     '</div>';
   }
+  /* ── Card showing the cash vs e-transfer split ────────────── */
+  function splitCard(label, cash, etransfer, colorVar, bgVar) {
+    return '<div style="background:' + bgVar + ';border-radius:var(--radius);padding:1.25rem 1.5rem;' +
+      'border:1px solid var(--cream-dark);text-align:center;flex:1;min-width:140px">' +
+      '<div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;' +
+        'color:var(--text-muted);margin-bottom:0.4rem">' + label + '</div>' +
+      '<div style="display:flex;justify-content:center;gap:0.9rem;align-items:baseline">' +
+        '<div><div style="font-family:\'Playfair Display\',serif;font-size:1.35rem;font-weight:700;' +
+          'color:' + colorVar + '">$' + cash.toFixed(2) + '</div>' +
+          '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.1rem">💵 Cash</div></div>' +
+        '<div style="color:var(--cream-dark);font-weight:700">/</div>' +
+        '<div><div style="font-family:\'Playfair Display\',serif;font-size:1.35rem;font-weight:700;' +
+          'color:' + colorVar + '">$' + etransfer.toFixed(2) + '</div>' +
+          '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.1rem">📧 E-Transfer</div></div>' +
+      '</div>' +
+    '</div>';
+  }
   var statsHtml =
     '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem">' +
       statCard('Paid Revenue',   paidRevenue,   paidOrders.length + ' orders',   '#3a7a4a',       'var(--green-light)') +
       statCard('Unpaid Revenue', unpaidRevenue, unpaidOrders.length + ' orders', '#a03030',       'var(--red-light)') +
+      splitCard('Cash / E-Transfer', cashRevenue, etransferRevenue, 'var(--navy)', 'var(--blue-xlight)') +
       statCard('Supply Costs',   supplyCost,    periodExpenses.length + ' purchases', '#8a4a30', '#fdeee8') +
+      statCard('Tax (20%)',      taxAmount,     '20% of revenue', '#5a4a8a', '#efeafa') +
       statCard(netProfit >= 0 ? 'Net Profit' : 'Net Loss', netProfit, 'paid \u2212 supplies',
         netProfit >= 0 ? 'var(--navy)' : 'var(--red)', 'var(--cream)') +
     '</div>';

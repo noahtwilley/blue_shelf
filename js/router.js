@@ -5,6 +5,7 @@ function showPage(name) {
   if (typeof appReady !== 'undefined' && !appReady) return;
   /* Stop availability polling whenever we navigate away from the order page */
   if (typeof stopAvailabilityPolling === 'function') stopAvailabilityPolling();
+  var _nav = document.querySelector('nav'); if (_nav) _nav.style.display = '';
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
   document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
@@ -35,6 +36,7 @@ function showPage(name) {
 function resumeOrder() {
   if (typeof appReady !== 'undefined' && !appReady) return;
   if (typeof stopAvailabilityPolling === 'function') stopAvailabilityPolling();
+  var _nav = document.querySelector('nav'); if (_nav) _nav.style.display = '';
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
   document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
   document.getElementById('page-order').classList.add('active');

@@ -1,0 +1,75 @@
+<!-- === BLUE SHELF MICROBAKERY === FILE: pages/stand.html === -->
+<!-- Mobile-first in-person "stand" kiosk: today's products + details on one screen. -->
+<!-- Reached via QR code (yourdomain.com/stand → ?page=stand). No nav tab. -->
+
+<div class="page" id="page-stand">
+  <div class="stand-wrap">
+
+    <!-- SUCCESS OVERLAY -->
+    <div class="stand-success" id="stand-success">
+      <div class="stand-success-check">
+        <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="26" cy="26" r="26" fill="#7aba8a"/>
+          <path d="M14 27L22 35L38 18" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 id="stand-success-heading">Order placed!</h2>
+      <p id="stand-success-sub">Thanks — see you again soon.</p>
+      <button class="stand-next-btn" onclick="standNextCustomer()">Next customer →</button>
+    </div>
+
+    <!-- ORDER SCREEN -->
+    <div id="stand-order-screen">
+      <header class="stand-hero">
+        <div class="stand-hero-logo">Blue <span>Shelf</span></div>
+        <h1>Order at the Stand</h1>
+        <p id="stand-date-label">Today</p>
+      </header>
+
+      <section class="stand-section">
+        <h2 class="stand-section-title">Today's goodies</h2>
+        <div id="stand-products-grid" class="stand-products"></div>
+      </section>
+
+      <section class="stand-section" id="stand-details">
+        <h2 class="stand-section-title">Your details</h2>
+        <div class="stand-field">
+          <label for="stand-f-name">Name</label>
+          <input type="text" id="stand-f-name" autocomplete="name" placeholder="Jane" />
+        </div>
+        <div class="stand-field">
+          <label for="stand-f-phone">Phone</label>
+          <input type="tel" id="stand-f-phone" autocomplete="tel" inputmode="tel" placeholder="(416) 555-0100" />
+        </div>
+        <div class="stand-field">
+          <label for="stand-f-email">Email <span class="stand-optional">(optional — for a receipt)</span></label>
+          <input type="email" id="stand-f-email" autocomplete="email" inputmode="email" placeholder="jane@email.com" />
+        </div>
+        <div class="stand-field">
+          <label>Payment</label>
+          <div class="stand-pay-options">
+            <button type="button" class="stand-pay-option selected" data-pay="💵 Cash" onclick="selectStandPayment(this)">💵 Cash</button>
+            <button type="button" class="stand-pay-option" data-pay="📧 E-Transfer" onclick="selectStandPayment(this)">📧 E-Transfer</button>
+          </div>
+        </div>
+        <div class="stand-field">
+          <label for="stand-f-notes">Notes <span class="stand-optional">(optional)</span></label>
+          <textarea id="stand-f-notes" rows="2" placeholder="Allergies, special requests…"></textarea>
+        </div>
+      </section>
+
+      <!-- spacer so sticky bar never covers the last field -->
+      <div style="height:6rem"></div>
+    </div>
+
+    <!-- STICKY CHECKOUT BAR -->
+    <div class="stand-checkout-bar hide" id="stand-checkout-bar">
+      <div class="stand-checkout-info">
+        <span id="stand-subtotal-items">0 items</span>
+        <strong id="stand-subtotal-total">$0.00</strong>
+      </div>
+      <button class="stand-place-btn" id="stand-place-btn" onclick="submitStandOrder()">Place order →</button>
+    </div>
+
+  </div>
+</div>
