@@ -201,7 +201,7 @@ function submitStandOrder() {
     total: Number(total.toFixed(2))
   };
 
-  if (typeof placeOrderRpc !== 'function' && typeof saveOrder !== 'function') {
+  if (typeof saveOrder !== 'function') {
     showToast('Order service is not configured yet.'); return;
   }
 
@@ -209,20 +209,12 @@ function submitStandOrder() {
   var originalLabel = btn.textContent;
   btn.textContent = 'Placing…';
 
-  var orderFn = typeof placeOrderRpc === 'function' ? placeOrderRpc : saveOrder;
-  orderFn(payload).then(function(saved) {
+  saveOrder(payload).then(function(saved) {
     /* Deduct stock locally after persistence succeeds */
     S.cart.forEach(function(c) {
       var item = S.menuItems.find(function(i) { return i.id === c.id; });
       if (item) item.stock = Math.max(0, item.stock - c.qty);
     });
-
-    /* The place_order RPC drops the extra columns — follow-up PATCH (same as the wizard) */
-    if (saved.id && typeof patchOrderFields === 'function') {
-      patchOrderFields(saved.id, {
-        payment: payment, fulfillment: 'Stand', delivery_address: null, paid: false, received: false
-      }).catch(function(err) { console.warn('Follow-up order PATCH failed:', err.message); });
-    }
 
     var order = {
       id:       saved.id ? '#' + String(saved.id).substring(0, 8).toUpperCase() : '#' + String(S.orders.length + 1).padStart(8, '0'),
@@ -278,11 +270,9 @@ function showStandSuccess(name, payment, total) {
     var payEmail = (window.State && window.State.paymentEmail) || '';
     var amountStr = total ? '$' + total : '';
     document.getElementById('stand-etransfer-amount').textContent = amountStr;
-    var emailLink = document.getElementById('stand-etransfer-link');
-    emailLink.textContent = payEmail;
-    emailLink.href = 'mailto:' + payEmail +
-      '?subject=' + encodeURIComponent('Interac e-Transfer ' + amountStr) +
-      '&body=' + encodeURIComponent('Hi, please find my Interac e-Transfer of ' + amountStr + ' for my Blue Shelf order.');
+    var copyBtn = document.getElementById('stand-etransfer-copy');
+    copyBtn.textContent = payEmail;
+    copyBtn.setAttribute('data-email', payEmail);
     etransferCard.style.display = 'block';
     document.getElementById('stand-success-sub').textContent = 'Your order is in — please send your e-transfer now.';
   } else {
@@ -292,6 +282,31 @@ function showStandSuccess(name, payment, total) {
 
   document.getElementById('stand-success').classList.add('show');
   document.getElementById('stand-checkout-bar').classList.add('hide');
+}
+
+function copyEtransferEmail() {
+  var btn = document.getElementById('stand-etransfer-copy');
+  var email = btn ? btn.getAttribute('data-email') : '';
+  if (!email) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(email).then(function() {
+      var orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(function() { btn.textContent = orig; }, 2000);
+    });
+  } else {
+    /* Fallback for older mobile browsers */
+    var ta = document.createElement('textarea');
+    ta.value = email;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = orig; }, 2000);
+  }
 }
 
 function standNextCustomer() {

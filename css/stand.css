@@ -131,10 +131,11 @@
 }
 .stand-etransfer-email {
   font-size: 1.05rem; font-weight: 700; color: var(--blue-dark); word-break: break-all;
-  text-decoration: none; display: block; padding: 0.6rem 0.75rem;
+  border: none; display: block; width: 100%; padding: 0.6rem 0.75rem; cursor: pointer;
   background: var(--white); border-radius: 10px; margin-bottom: 0.75rem;
+  font-family: 'DM Sans', sans-serif; touch-action: manipulation;
 }
-.stand-etransfer-email:hover { text-decoration: underline; }
+.stand-etransfer-email:active { background: var(--blue-xlight); }
 .stand-etransfer-hint { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
 
 /* Larger screens: keep it centered and tidy */
