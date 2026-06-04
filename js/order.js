@@ -64,6 +64,10 @@ function hydrateOrderSuccessFromUrl() {
   }, 50);
 })();
 
+function backFromProducts() {
+  goToStep(2);
+}
+
 /* ─── WIZARD NAVIGATION ─────────────────────────────────────── */
 function goToStep(n) {
   var S = window.State;
@@ -490,7 +494,7 @@ function submitWizardOrder() {
     items: dbItems,
     quantity: S.cart.reduce(function(sum, c) { return sum + c.qty; }, 0),
     pickup_date: S.wizardState.date,
-    fulfillment:      S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery',
+    fulfillment:      S.wizardState.mode === 'stand' ? 'Stand' : (S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery'),
     delivery_address: S.wizardState.deliveryAddr || null,
     payment:  payment,
     paid:     false,
@@ -521,7 +525,7 @@ function submitWizardOrder() {
     if (savedOrder.id && typeof patchOrderFields === 'function') {
       patchOrderFields(savedOrder.id, {
         payment:          payment,
-        fulfillment:      S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery',
+        fulfillment:      S.wizardState.mode === 'stand' ? 'Stand' : (S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery'),
         delivery_address: S.wizardState.deliveryAddr || null,
         paid:             false,
         received:         false
@@ -530,8 +534,8 @@ function submitWizardOrder() {
       });
     }
 
-    var fulfillment = S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery';
-    var modeLabel = fulfillment === 'Pickup' ? 'Pickup' : 'Delivery - ' + S.wizardState.deliveryAddr;
+    var fulfillment = S.wizardState.mode === 'stand' ? 'Stand' : (S.wizardState.mode === 'pickup' ? 'Pickup' : 'Delivery');
+    var modeLabel = fulfillment === 'Stand' ? 'Stand Order' : (fulfillment === 'Pickup' ? 'Pickup' : 'Delivery - ' + S.wizardState.deliveryAddr);
     var order = {
       /* MODIFIED (Task 6): first 8 chars of the Supabase ID — works for both UUID and integer PKs */
       id:           savedOrder.id ? '#' + String(savedOrder.id).substring(0, 8).toUpperCase() : '#' + String(S.orders.length + 1).padStart(8, '0'),
@@ -554,7 +558,8 @@ function submitWizardOrder() {
       mode:         S.wizardState.mode,
       deliveryAddr: S.wizardState.deliveryAddr,
       fulfillment:  fulfillment,
-      address:      S.wizardState.deliveryAddr || null
+      address:      S.wizardState.deliveryAddr || null,
+      orderType:    S.wizardState.orderType || 'preorder'
     };
 
     S.orders.push(order);
@@ -578,17 +583,22 @@ function submitWizardOrder() {
 
 function resetWizard() {
   var S = window.State;
-  S.wizardState = {step: 1, date: null, mode: null, deliveryAddr: null};
+  S.wizardState = {step: 1, date: null, mode: null, deliveryAddr: null, orderType: 'preorder'};
   document.getElementById('floating-subtotal').classList.add('hide');
   ['f-name', 'f-email', 'f-phone', 'f-notes'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.value = '';
   });
+  /* Reset payment option back to Cash */
+  var payOpts = document.querySelectorAll('.payment-option');
+  payOpts.forEach(function(p, i) { p.classList.toggle('selected', i === 0); });
+  /* Ensure progress bar is visible (stand mode used to hide it) */
+  var progressBar = document.querySelector('.wizard-progress');
+  if (progressBar) progressBar.style.display = '';
 }
 
 function resetOrder() {
   if (successRedirectTimer) { clearTimeout(successRedirectTimer); successRedirectTimer = null; }
-  document.getElementById('wizard-wrap').style.display = 'block';
   document.getElementById('order-success').classList.remove('show');
   resetWizard();
   showPage('menu');

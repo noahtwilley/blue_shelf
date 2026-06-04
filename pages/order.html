@@ -1,5 +1,5 @@
 <!-- === BLUE SHELF MICROBAKERY === FILE: pages/order.html === -->
-<!-- Order page: 4-step wizard (Date → Pickup/Delivery → Products → Checkout) -->
+<!-- Order page: order-type selector + 4-step wizard (Date → Pickup/Delivery → Products → Checkout) -->
 
 <div class="page" id="page-order">
   <div class="page-hero" data-emoji="🛍️">
@@ -95,7 +95,7 @@
           </div>
           <div style="margin-bottom:2rem">
             <div class="wizard-buttons" style="padding-bottom:6rem">
-              <button class="wizard-btn-prev" onclick="goToStep(2)">← Back</button>
+              <button class="wizard-btn-prev" onclick="backFromProducts()">← Back</button>
             </div>
           </div>
         </div>

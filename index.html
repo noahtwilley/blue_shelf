@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/nav.css" />
   <link rel="stylesheet" href="css/menu.css" />
   <link rel="stylesheet" href="css/order.css" />
+  <link rel="stylesheet" href="css/stand.css" />
   <link rel="stylesheet" href="css/admin.css" />
   <!-- MODIFIED: EmailJS CDN for order confirmation emails (CHANGE 1) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -54,13 +55,14 @@
 <script src="js/supabase.js"></script>
 <script src="js/availability.js"></script>
 <script src="js/order.js"></script>
+<script src="js/stand.js"></script>
 <script src="js/admin.js"></script>
 
 <!-- LOAD PAGE PARTIALS & INIT -->
 <script>
 var appReady = false;
 (function() {
-  var pages = ['pages/menu.html', 'pages/order.html', 'pages/admin.html'];
+  var pages = ['pages/menu.html', 'pages/order.html', 'pages/admin.html', 'pages/stand.html'];
   var app = document.getElementById('app');
   var results = new Array(pages.length);
   var loaded = 0;

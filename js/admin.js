@@ -7,7 +7,7 @@
 /* ─── HELPERS ────────────────────────────────────────────────── */
 /* MODIFIED: compatibility helpers for old orders (mode/deliveryAddr) and new (fulfillment/address) (CHANGE 5) */
 function getOrderFulfillment(o) {
-  return o.fulfillment || (o.mode === 'pickup' ? 'Pickup' : 'Delivery');
+  return o.fulfillment || (o.mode === 'stand' ? 'Stand' : (o.mode === 'pickup' ? 'Pickup' : 'Delivery'));
 }
 function getOrderAddress(o) {
   return o.address || o.deliveryAddr || null;
@@ -42,7 +42,7 @@ function normalizeDbOrder(row) {
     paid:         row.paid         || false,
     received:     row.received     || false,
     notes:        row.notes        || '',
-    mode:         fulfillment === 'Pickup' ? 'pickup' : 'delivery',
+    mode:         fulfillment === 'Stand' ? 'stand' : (fulfillment === 'Pickup' ? 'pickup' : 'delivery'),
     deliveryAddr: row.delivery_address || null,
     fulfillment:  fulfillment,
     address:      row.delivery_address || null
@@ -231,7 +231,8 @@ function renderOrdersTab() {
   var filteredOrders = S.orders.filter(function(o) {
     var f = getOrderFulfillment(o);
     if (S.ordersFilter === 'pickup')   return f === 'Pickup';
-    if (S.ordersFilter === 'delivery') return f !== 'Pickup';
+    if (S.ordersFilter === 'delivery') return f === 'Delivery';
+    if (S.ordersFilter === 'stand')    return f === 'Stand';
     return true;
   });
 
@@ -265,6 +266,7 @@ function renderOrdersTab() {
     filterBtn('all', 'All Orders') +
     filterBtn('pickup', '\uD83C\uDFE0 Pickup Only') +
     filterBtn('delivery', '\uD83D\uDE97 Delivery Only') +
+    filterBtn('stand', '\uD83C\uDFAA Stand Only') +
     '<button onclick="toggleOrdersHideReceived()" style="' +
       'padding:0.4rem 1rem;border-radius:50px;cursor:pointer;' +
       'font-family:\'DM Sans\',sans-serif;font-size:0.82rem;font-weight:600;transition:all 0.2s;' +
@@ -296,11 +298,11 @@ function renderOrdersTab() {
       var address = getOrderAddress(o);
       var itemsShort = o.items.length > 30 ? o.items.substring(0, 30) + '\u2026' : o.items;
       /* MODIFIED: fulfillment pill — blue for pickup, blush for delivery (CHANGE 5) */
+      var fulfillmentTag = fulfillment === 'Stand' ? 'tag-amber' : (fulfillment === 'Pickup' ? 'tag-blue' : 'tag-blush');
+      var fulfillmentLabel = fulfillment === 'Stand' ? '\uD83C\uDFEA Stand' : (fulfillment === 'Pickup' ? '\uD83C\uDFE0 Pickup' : '\uD83D\uDE97 Delivery');
       var fulfillmentCell =
-        '<span class="tag ' + (fulfillment === 'Pickup' ? 'tag-blue' : 'tag-blush') + '">' +
-          (fulfillment === 'Pickup' ? '\uD83C\uDFE0 Pickup' : '\uD83D\uDE97 Delivery') +
-        '</span>' +
-        (fulfillment !== 'Pickup' && address ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">' + address + '</div>' : '');
+        '<span class="tag ' + fulfillmentTag + '">' + fulfillmentLabel + '</span>' +
+        (fulfillment === 'Delivery' && address ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">' + address + '</div>' : '');
       return '<tr>' +
         '<td><strong style="font-size:0.82rem">' + o.id + '</strong></td>' +
         '<td><span style="font-weight:600">' + o.name + '</span></td>' +
@@ -842,7 +844,15 @@ function renderBudgetTab() {
   var paidRevenue   = paidOrders.reduce(function(s, o)   { return s + parseFloat(o.total   || 0); }, 0);
   var unpaidRevenue = unpaidOrders.reduce(function(s, o) { return s + parseFloat(o.total   || 0); }, 0);
   var totalRevenue  = paidRevenue + unpaidRevenue;
+  /* ── Revenue split by payment method ──────────────────────── */
+  var cashRevenue      = periodOrders.reduce(function(s, o) {
+    return (o.payment || '').toLowerCase().indexOf('cash') !== -1 ? s + parseFloat(o.total || 0) : s;
+  }, 0);
+  var etransferRevenue = periodOrders.reduce(function(s, o) {
+    return (o.payment || '').toLowerCase().indexOf('transfer') !== -1 ? s + parseFloat(o.total || 0) : s;
+  }, 0);
   var supplyCost    = periodExpenses.reduce(function(s, e) { return s + parseFloat(e.amount || 0); }, 0);
+  var taxAmount     = totalRevenue * 0.20;
   var netProfit     = paidRevenue - supplyCost;
 
   /* ── Period buttons (disabled when a specific month is chosen) */
@@ -894,11 +904,30 @@ function renderBudgetTab() {
       (sub ? '<div style="font-size:0.76rem;color:var(--text-muted);margin-top:0.2rem">' + sub + '</div>' : '') +
     '</div>';
   }
+  /* ── Card showing the cash vs e-transfer split ────────────── */
+  function splitCard(label, cash, etransfer, colorVar, bgVar) {
+    return '<div style="background:' + bgVar + ';border-radius:var(--radius);padding:1.25rem 1.5rem;' +
+      'border:1px solid var(--cream-dark);text-align:center;flex:1;min-width:140px">' +
+      '<div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;' +
+        'color:var(--text-muted);margin-bottom:0.4rem">' + label + '</div>' +
+      '<div style="display:flex;justify-content:center;gap:0.9rem;align-items:baseline">' +
+        '<div><div style="font-family:\'Playfair Display\',serif;font-size:1.35rem;font-weight:700;' +
+          'color:' + colorVar + '">$' + cash.toFixed(2) + '</div>' +
+          '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.1rem">💵 Cash</div></div>' +
+        '<div style="color:var(--cream-dark);font-weight:700">/</div>' +
+        '<div><div style="font-family:\'Playfair Display\',serif;font-size:1.35rem;font-weight:700;' +
+          'color:' + colorVar + '">$' + etransfer.toFixed(2) + '</div>' +
+          '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.1rem">📧 E-Transfer</div></div>' +
+      '</div>' +
+    '</div>';
+  }
   var statsHtml =
     '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem">' +
       statCard('Paid Revenue',   paidRevenue,   paidOrders.length + ' orders',   '#3a7a4a',       'var(--green-light)') +
       statCard('Unpaid Revenue', unpaidRevenue, unpaidOrders.length + ' orders', '#a03030',       'var(--red-light)') +
+      splitCard('Cash / E-Transfer', cashRevenue, etransferRevenue, 'var(--navy)', 'var(--blue-xlight)') +
       statCard('Supply Costs',   supplyCost,    periodExpenses.length + ' purchases', '#8a4a30', '#fdeee8') +
+      statCard('Tax (20%)',      taxAmount,     '20% of revenue', '#5a4a8a', '#efeafa') +
       statCard(netProfit >= 0 ? 'Net Profit' : 'Net Loss', netProfit, 'paid \u2212 supplies',
         netProfit >= 0 ? 'var(--navy)' : 'var(--red)', 'var(--cream)') +
     '</div>';
