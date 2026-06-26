@@ -126,6 +126,9 @@ body::before {
   font-size: 0.85rem;
 }
 .site-footer strong { color: var(--navy); font-weight: 600; }
+.footer-social { display: flex; justify-content: center; gap: 1.25rem; margin-bottom: 0.75rem; }
+.footer-social a { color: var(--blue-dark); font-weight: 600; text-decoration: none; }
+.footer-social a:hover { text-decoration: underline; }
 
 /* RESPONSIVE SHARED */
 @media (max-width: 800px) {
